@@ -1,33 +1,56 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+
+let __idCounter = 1;
 import { useAuth } from "../../context/AuthContext";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import Loader from "../../components/ui/Loader";
 import Navbar from "../../components/layout/Navbar";
 import Footer from "../../components/layout/Footer";
+import {
+  addCarbonActivity,
+  getCarbonActivities,
+  checkAndAwardBadges,
+} from "../../services/ecoService";
 
 export default function CarbonTracker() {
   const { currentUser } = useAuth();
-  const [activities, setActivities] = useState([
-    { id: 1, name: "Biking to work", co2: 2.5, date: "Today" },
-    { id: 2, name: "Public transit used", co2: 1.8, date: "Yesterday" },
-    { id: 3, name: "Meat-free meal", co2: 0.5, date: "2 days ago" },
-  ]);
+  const [activities, setActivities] = useState([]);
   const [totalCO2Saved, setTotalCO2Saved] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  // fetch persisted activities when user logs in
+  useEffect(() => {
+    if (!currentUser) return;
+    getCarbonActivities(currentUser.uid)
+      .then((data) => setActivities(data))
+      .catch((err) => console.error("failed to load carbon activities", err))
+      .finally(() => setLoading(false));
+  }, [currentUser]);
 
   useEffect(() => {
-    const total = activities.reduce((sum, a) => sum + a.co2, 0);
+    const total = activities.reduce((sum, a) => sum + (a.co2 || 0), 0);
     setTotalCO2Saved(total);
   }, [activities]);
 
-  const addActivity = (activityName, co2Amount) => {
-    const newActivity = {
-      id: activities.length + 1,
-      name: activityName,
-      co2: co2Amount,
-      date: "Today",
-    };
-    setActivities([newActivity, ...activities]);
+  const addActivity = async (activityName, co2Amount) => {
+    if (!currentUser) return;
+    try {
+      const points = Math.round(co2Amount); // 1 point per kg CO2
+      await addCarbonActivity(currentUser.uid, activityName, co2Amount, points);
+      const newActivity = {
+        id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `id-fallback-${__idCounter++}`,
+        name: activityName,
+        co2: co2Amount,
+        date: "Today",
+      };
+      setActivities((prev) => [newActivity, ...prev]);
+      // check if any badges were unlocked
+      await checkAndAwardBadges(currentUser.uid);
+    } catch (err) {
+      console.error("error adding activity", err);
+    }
   };
 
   return (
@@ -47,12 +70,17 @@ export default function CarbonTracker() {
           </p>
 
           {/* Stats Card */}
-          <motion.div
-            className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
-          >
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <Loader size="lg" />
+            </div>
+          ) : (
+            <motion.div
+              className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+            >
             <Card>
               <p className="eco-text-muted text-sm">Total CO₂ Saved</p>
               <p className="eco-heading-lg text-eco-600">{totalCO2Saved.toFixed(1)} kg</p>
@@ -66,6 +94,7 @@ export default function CarbonTracker() {
               <p className="eco-heading-lg text-green-600">{(totalCO2Saved / 20).toFixed(1)}</p>
             </Card>
           </motion.div>
+          )}
 
           {/* Activity List */}
           <Card>

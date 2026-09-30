@@ -1,31 +1,52 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+
+let __idCounter = 1;
 import { useAuth } from "../../context/AuthContext";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import Loader from "../../components/ui/Loader";
 import Navbar from "../../components/layout/Navbar";
 import Footer from "../../components/layout/Footer";
+import {
+  addWasteReport,
+  getWasteReports,
+  checkAndAwardBadges,
+} from "../../services/ecoService";
 
 export default function WasteReporting() {
   const { currentUser } = useAuth();
-  const [reports, setReports] = useState([
-    { id: 1, type: "Plastic", amount: 2.5, location: "Community center", date: "Today" },
-    { id: 2, type: "Paper", amount: 5.0, location: "Park", date: "Yesterday" },
-    { id: 3, type: "Metal", amount: 1.2, location: "Street", date: "2 days ago" },
-  ]);
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const wasteTypes = ["Plastic", "Paper", "Metal", "Glass", "Organic", "E-waste"];
 
-  const addReport = (type, amount, location) => {
-    const newReport = {
-      id: reports.length + 1,
-      type,
-      amount,
-      location,
-      date: "Today",
-    };
-    setReports([newReport, ...reports]);
+  const addReport = async (type, amount, location) => {
+    if (!currentUser) return;
+    try {
+      await addWasteReport(currentUser.uid, type, amount, location);
+        const newReport = {
+          id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `id-fallback-${__idCounter++}`,
+        type,
+        amount,
+        location,
+        date: "Today",
+      };
+      setReports((prev) => [newReport, ...prev]);
+      // check if any badges were unlocked
+      await checkAndAwardBadges(currentUser.uid);
+    } catch (err) {
+      console.error("failed to add waste report", err);
+    }
   };
+
+  useEffect(() => {
+    if (!currentUser) return;
+    getWasteReports(currentUser.uid)
+      .then((data) => setReports(data))
+      .catch((err) => console.error("failed to fetch waste reports", err))
+      .finally(() => setLoading(false));
+  }, [currentUser]);
 
   return (
     <>
@@ -44,12 +65,17 @@ export default function WasteReporting() {
           </p>
 
           {/* Stats */}
-          <motion.div
-            className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
-          >
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <Loader size="lg" />
+            </div>
+          ) : (
+            <motion.div
+              className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+            >
             <Card>
               <p className="eco-text-muted text-sm">Total Reported</p>
               <p className="eco-heading-lg text-eco-600">
@@ -67,6 +93,7 @@ export default function WasteReporting() {
               </p>
             </Card>
           </motion.div>
+          )}
 
           {/* Report List */}
           <Card className="mb-6">

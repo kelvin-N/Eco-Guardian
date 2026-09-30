@@ -33,10 +33,14 @@ const Button = forwardRef(
       <button
         ref={ref}
         disabled={disabled || loading}
-        className={baseClasses}
+        aria-busy={loading}
+        aria-disabled={disabled || loading}
+        className={`${baseClasses} relative overflow-hidden shadow-sm hover:shadow-md active:shadow-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-eco-200 dark:focus-visible:ring-eco-900/70`}
         {...props}
       >
-        <div className="flex items-center justify-center gap-2">
+        {/* ripple container */}
+        <span className="absolute inset-0 pointer-events-none ripple"></span>
+        <div className="flex items-center justify-center gap-2 relative z-10">
           {loading && (
             <span className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span>
           )}

@@ -39,7 +39,7 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 shadow-sm">
       <div className="eco-container">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-16 transition-colors duration-200">
           {/* Logo */}
           <Link
             to="/dashboard"
@@ -62,7 +62,7 @@ export default function Navbar() {
               {navLinks.map((link) => (
                 <Link key={link.path} to={link.path}>
                   <button
-                    className={`px-3 py-2 rounded-lg transition-all ${
+                    className={`px-3 py-2 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 ${
                       isActive(link.path)
                         ? "bg-eco-100 dark:bg-eco-900/30 text-eco-600 dark:text-eco-400"
                         : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"

@@ -1,29 +1,76 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import Loader from "../../components/ui/Loader";
 import Navbar from "../../components/layout/Navbar";
 import Footer from "../../components/layout/Footer";
+import {
+  updateUserProfileData,
+  getUserBadges,
+  BADGE_DEFINITIONS,
+  getCarbonActivities,
+  getWasteReports,
+} from "../../services/ecoService";
 
 export default function UserProfile() {
-  const { currentUser, userProfile, logout } = useAuth();
+  const { currentUser, userProfile, updateProfile } = useAuth();
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState(
     currentUser?.displayName || currentUser?.email?.split("@")[0] || ""
   );
+  const [badges, setBadges] = useState([]);
+  const [loadingBadges, setLoadingBadges] = useState(true);
+  const [stats, setStats] = useState({
+    ecoScore: 0,
+    co2Saved: 0,
+    wasteLogged: 0,
+    activities: 0,
+  });
 
-  const stats = {
-    ecoScore: userProfile?.ecoScore || 850,
-    co2Saved: 52.3,
-    wasteLogged: 68,
-    activities: 35,
-    level: "Eco Champion",
-  };
+  // Load badges on mount
+  useEffect(() => {
+    if (!currentUser) return;
+    getUserBadges(currentUser.uid)
+      .then((userBadges) => setBadges(userBadges))
+      .catch((err) => console.error("failed to load badges", err))
+      .finally(() => setLoadingBadges(false));
+  }, [currentUser]);
 
-  const handleSaveProfile = () => {
+  // Load stats
+  useEffect(() => {
+    if (!currentUser) return;
+    Promise.all([
+      getCarbonActivities(currentUser.uid),
+      getWasteReports(currentUser.uid),
+    ])
+      .then(([carbon, waste]) => {
+        const co2Total = carbon.reduce((s, a) => s + (a.co2 || 0), 0);
+        setStats({
+          ecoScore: userProfile?.ecoScore || 0,
+          co2Saved: co2Total,
+          wasteLogged: waste.reduce((s, w) => s + (w.amount || 0), 0),
+          activities: carbon.length,
+        });
+      })
+      .catch((err) => console.error("failed to load stats", err));
+  }, [currentUser, userProfile]);
+
+  const handleSaveProfile = async () => {
+    if (!currentUser) return;
     setEditing(false);
-    // TODO: Save profile to Firestore
+    try {
+      // update auth display name
+      if (displayName && displayName !== currentUser.displayName) {
+        await updateProfile(displayName);
+      }
+      // update Firestore profile if needed
+      await updateUserProfileData(currentUser.uid, { displayName });
+      // optional: could refresh userProfile from context by forcing reload
+    } catch (err) {
+      console.error("failed to save profile", err);
+    }
   };
 
   return (
@@ -47,9 +94,21 @@ export default function UserProfile() {
                 <h1 className="eco-heading-2xl">{displayName || "User"}</h1>
                 <p className="eco-text-muted">{currentUser?.email}</p>
                 <div className="mt-2 flex gap-2">
-                  <span className="eco-badge eco-badge-success">
-                    {stats.level}
-                  </span>
+                  {stats.ecoScore >= 500 && (
+                    <span className="eco-badge bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                      👑 Eco Champion
+                    </span>
+                  )}
+                  {stats.ecoScore >= 100 && stats.ecoScore < 500 && (
+                    <span className="eco-badge bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+                      🌱 Eco Warrior
+                    </span>
+                  )}
+                  {stats.ecoScore < 100 && (
+                    <span className="eco-badge bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                      ⚡ Getting Started
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -68,11 +127,11 @@ export default function UserProfile() {
             </Card>
             <Card>
               <p className="eco-text-muted text-sm">CO₂ Saved</p>
-              <p className="eco-heading-lg">{stats.co2Saved} kg</p>
+              <p className="eco-heading-lg">{stats.co2Saved.toFixed(1)} kg</p>
             </Card>
             <Card>
               <p className="eco-text-muted text-sm">Waste Logged</p>
-              <p className="eco-heading-lg">{stats.wasteLogged} kg</p>
+              <p className="eco-heading-lg">{stats.wasteLogged.toFixed(1)} kg</p>
             </Card>
             <Card>
               <p className="eco-text-muted text-sm">Activities</p>
@@ -145,23 +204,54 @@ export default function UserProfile() {
 
           {/* Achievements */}
           <Card className="mb-6">
-            <h2 className="eco-heading-lg mb-4">Achievements</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[
-                { icon: "🌱", label: "First Steps", desc: "Log 1 activity" },
-                { icon: "♻️", label: "Recycler", desc: "Log 10 waste items" },
-                { icon: "🚴", label: "Commuter", desc: "Save 50kg CO₂" },
-                { icon: "👑", label: "Champion", desc: "Reach Eco Champion" },
-              ].map((achievement) => (
-                <div
-                  key={achievement.label}
-                  className="text-center p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border-2 border-amber-300 dark:border-amber-600"
-                >
-                  <p className="text-3xl mb-1">{achievement.icon}</p>
-                  <p className="text-xs font-semibold">{achievement.label}</p>
-                  <p className="text-xs eco-text-muted">{achievement.desc}</p>
-                </div>
-              ))}
+            <h2 className="eco-heading-lg mb-4">🏆 Earned Badges</h2>
+            {loadingBadges ? (
+              <div className="flex justify-center py-10">
+                <Loader size="md" />
+              </div>
+            ) : badges.length === 0 ? (
+              <p className="eco-text-muted text-center py-8">
+                No badges earned yet. Keep logging activities to unlock badges!
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {badges.map((badge) => (
+                  <motion.div
+                    key={badge.id}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border-2 border-amber-300 dark:border-amber-600"
+                  >
+                    <p className="text-4xl mb-2">{badge.icon}</p>
+                    <p className="text-xs font-semibold">{badge.name}</p>
+                    <p className="text-xs eco-text-muted mt-1">
+                      {badge.unlockedAt?.toDate?.()?.toLocaleDateString?.() || "Earned"}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+            
+            {/* Show upcoming badges */}
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-xs font-semibold text-eco-600 dark:text-eco-400 mb-3">
+                🎯 Unlock more badges:
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {Object.values(BADGE_DEFINITIONS)
+                  .filter((def) => !badges.find((b) => b.badgeId === def.id))
+                  .slice(0, 4)
+                  .map((badge) => (
+                    <div
+                      key={badge.id}
+                      className="text-center p-2 bg-gray-100 dark:bg-gray-700 rounded-lg opacity-50"
+                    >
+                      <p className="text-2xl mb-1">{badge.icon}</p>
+                      <p className="text-xs font-semibold">{badge.name}</p>
+                      <p className="text-xs eco-text-muted">{badge.description}</p>
+                    </div>
+                  ))}
+              </div>
             </div>
           </Card>
 

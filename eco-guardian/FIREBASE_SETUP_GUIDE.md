@@ -96,6 +96,52 @@ admin account to reach.
 4. Click "Create"
 5. Note: Remember to change to Production rules before deploying!
 
+#### Collections used by Eco-Guardian
+The app relies on a few top-level collections which are created automatically
+when users interact with the site. You don't need to create them manually, but
+it's useful to know what they are:
+
+- `users` – holds each user's profile document with fields like `email`,
+  `ecoScore`, and `role` (admin or user). See **Admin Accounts** above.
+- `activities` – generic point‑earning actions (used by carbon tracker and
+  others).
+- `carbonActivities` – carbon-specific entries with a `co2` value.
+- `wasteReports` – logged recycling/clean-up events with `type`, `amount`,
+  and `location`.
+
+Later features such as analytics and the leaderboard read from these
+collections. You'll want to tighten up security rules before going to
+production; a simple example rule could allow users to read/write only their
+own documents and permit admins to query the `users` collection.
+
+Example security snippet (Firestore rules):
+```rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth.uid == userId || isAdmin();
+    }
+    match /activities/{doc} {
+      allow create: if request.auth.uid != null;
+      allow read: if request.auth.uid == resource.data.uid || isAdmin();
+    }
+    match /carbonActivities/{doc} {
+      allow create: if request.auth.uid != null;
+      allow read: if request.auth.uid == resource.data.uid || isAdmin();
+    }
+    match /wasteReports/{doc} {
+      allow create: if request.auth.uid != null;
+      allow read: if request.auth.uid == resource.data.uid || isAdmin();
+    }
+
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+  }
+}
+```
+
 ### Step 8: Set Up Firebase Storage (for file uploads)
 1. In Firebase Console, go to **Build** → **Storage**
 2. Click "Get started"

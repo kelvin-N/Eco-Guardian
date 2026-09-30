@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { db } from "../../firebase/firebaseConfig";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { useAuth } from "../../context/AuthContext";
@@ -8,7 +9,9 @@ import Footer from "../../components/layout/Footer";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
+import CO2Chart from "../../components/charts/CO2Chart";
 import Leaderboard from "../leaderboard/Leaderboard";
+import { getCarbonActivities } from "../../services/ecoService";
 
 // Activity Log Component
 function ActivityLog() {
@@ -130,13 +133,23 @@ function GoalProgress() {
 // Dashboard Main Component
 export default function Dashboard() {
   const { currentUser } = useAuth();
-  const [users, setUsers] = useState([]);
+  const navigate = useNavigate();
+  const [_users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [ecoScore, setEcoScore] = useState(0);
   const [rank, setRank] = useState("-");
+  const [carbonActivities, setCarbonActivities] = useState([]);
 
   useEffect(() => {
     if (!currentUser) return;
+
+    if (!db) {
+      setUsers([]);
+      setRank("-");
+      setEcoScore(0);
+      setLoading(false);
+      return;
+    }
 
     const q = query(collection(db, "users"), orderBy("ecoScore", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -156,6 +169,19 @@ export default function Dashboard() {
     });
 
     return () => unsubscribe();
+  }, [currentUser]);
+
+  // Load carbon activities for chart
+  useEffect(() => {
+    if (!currentUser) return;
+    if (!db) {
+      setCarbonActivities([]);
+      return;
+    }
+
+    getCarbonActivities(currentUser.uid)
+      .then((acts) => setCarbonActivities(acts))
+      .catch((err) => console.error("failed to load activities", err));
   }, [currentUser]);
 
   if (loading) {
@@ -194,6 +220,8 @@ export default function Dashboard() {
     },
   };
 
+  const rankLabel = rank === "-" ? "New" : `#${rank}`;
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -216,7 +244,9 @@ export default function Dashboard() {
                   You're making a difference every day. Keep up the amazing work!
                 </p>
               </div>
-              <Button variant="secondary">+ Log Activity</Button>
+              <Button variant="secondary" onClick={() => navigate("/carbon")}>
+                + Log Activity
+              </Button>
             </div>
           </motion.div>
 
@@ -233,7 +263,7 @@ export default function Dashboard() {
                   <div className="text-5xl mb-2">🏆</div>
                   <p className="eco-text-subtle mb-1">Your Rank</p>
                   <p className="eco-heading-lg text-eco-600 dark:text-eco-400">
-                    #{rank}
+                    {rankLabel}
                   </p>
                 </div>
               </Card>
@@ -285,6 +315,13 @@ export default function Dashboard() {
           >
             {/* Left Column */}
             <motion.div variants={itemVariants} className="lg:col-span-2 space-y-6">
+              {/* CO2 Chart */}
+              {carbonActivities.length > 0 && (
+                <Card>
+                  <h2 className="eco-heading-lg mb-4">📈 Your CO₂ Savings</h2>
+                  <CO2Chart carbonActivities={carbonActivities} />
+                </Card>
+              )}
               <GoalProgress />
               <ActivityLog />
             </motion.div>

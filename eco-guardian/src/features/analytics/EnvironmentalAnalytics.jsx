@@ -1,37 +1,87 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import Loader from "../../components/ui/Loader";
 import Navbar from "../../components/layout/Navbar";
 import Footer from "../../components/layout/Footer";
+import CO2Chart from "../../components/charts/CO2Chart";
+import ActivityBreakdown from "../../components/charts/ActivityBreakdown";
+import WasteBreakdown from "../../components/charts/WasteBreakdown";
+import {
+  getCarbonActivities,
+  getWasteReports,
+} from "../../services/ecoService";
 
 export default function EnvironmentalAnalytics() {
   const { currentUser } = useAuth();
   const [timeFrame, setTimeFrame] = useState("month");
+  const [loading, setLoading] = useState(true);
 
-  const stats = {
-    week: {
-      co2Saved: 12.5,
-      wasteLogged: 15,
-      activities: 8,
-      points: 45,
-    },
-    month: {
-      co2Saved: 52.3,
-      wasteLogged: 68,
-      activities: 35,
-      points: 210,
-    },
-    year: {
-      co2Saved: 456.8,
-      wasteLogged: 820,
-      activities: 380,
-      points: 2100,
-    },
-  };
+  const [rawStats, setRawStats] = useState({ activities: [], waste: [] });
+  
 
-  const currentStats = stats[timeFrame];
+  const computedStats = useMemo(() => {
+    const now = new Date();
+    const day = 1000 * 60 * 60 * 24;
+    const computeCounts = (items) => {
+      return items.reduce(
+        (tot, item) => {
+          const itemDate = item.createdAt?.toDate ? item.createdAt.toDate() : now;
+          const diff = now - itemDate;
+          if (diff < 7 * day) tot.week++;
+          if (diff < 30 * day) tot.month++;
+          if (diff < 365 * day) tot.year++;
+          return tot;
+        },
+        { week: 0, month: 0, year: 0 }
+      );
+    };
+
+    const activityCounts = computeCounts(rawStats.activities);
+
+    const wasteLogged = rawStats.waste.reduce((s, w) => s + (w.amount || 0), 0);
+    const co2Saved = rawStats.activities.reduce((s, a) => s + (a.co2 || 0), 0);
+    const points =
+      rawStats.activities.reduce((s, a) => s + (a.points || 0), 0) +
+      rawStats.waste.length * 5;
+
+    return {
+      week: {
+        activities: activityCounts.week,
+        wasteLogged,
+        co2Saved,
+        points,
+      },
+      month: {
+        activities: activityCounts.month,
+        wasteLogged,
+        co2Saved,
+        points,
+      },
+      year: {
+        activities: activityCounts.year,
+        wasteLogged,
+        co2Saved,
+        points,
+      },
+    };
+  }, [rawStats]);
+
+  const currentStats = computedStats[timeFrame];
+
+  useEffect(() => {
+    if (!currentUser) return;
+    // load activities and waste then compute simple totals
+    Promise.all([
+      getCarbonActivities(currentUser.uid),
+      getWasteReports(currentUser.uid),
+    ])
+      .then(([acts, waste]) => setRawStats({ activities: acts, waste }))
+      .catch((err) => console.error("analytics load error", err))
+      .finally(() => setLoading(false));
+  }, [currentUser]);
 
   return (
     <>
@@ -61,8 +111,11 @@ export default function EnvironmentalAnalytics() {
                 {tf}
               </Button>
             ))}
-          </div>
-
+          </div>          {loading && (
+            <div className="flex justify-center py-20">
+              <Loader size="lg" />
+            </div>
+          )}
           {/* Main Stats Grid */}
           <motion.div
             className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
@@ -135,24 +188,35 @@ export default function EnvironmentalAnalytics() {
             </div>
           </Card>
 
-          {/* Breakdown */}
-          <Card>
-            <h2 className="eco-heading-lg mb-4">Activity Breakdown</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[
-                { icon: "🚴", label: "Transport", pct: "35%" },
-                { icon: "🥗", label: "Food", pct: "25%" },
-                { icon: "♻️", label: "Waste", pct: "20%" },
-                { icon: "💡", label: "Energy", pct: "20%" },
-              ].map((item) => (
-                <div key={item.label} className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <p className="text-2xl mb-2">{item.icon}</p>
-                  <p className="text-sm font-medium">{item.label}</p>
-                  <p className="text-xs eco-text-muted">{item.pct}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
+          {/* CO2 Timeline Chart */}
+          {!loading && rawStats.activities.length > 0 && (
+            <Card className="mb-6">
+              <h2 className="eco-heading-lg mb-4">📈 CO₂ Savings Timeline</h2>
+              <CO2Chart carbonActivities={rawStats.activities} />
+            </Card>
+          )}
+
+          {/* Activity Type Breakdown */}
+          {!loading && rawStats.activities.length > 0 && (
+            <Card className="mb-6">
+              <h2 className="eco-heading-lg mb-4">🎯 Top Activities</h2>
+              <ActivityBreakdown carbonActivities={rawStats.activities} />
+            </Card>
+          )}
+
+          {/* Waste Breakdown Chart */}
+          {!loading && rawStats.waste.length > 0 && (
+            <Card className="mb-6">
+              <h2 className="eco-heading-lg mb-4">♻️ Waste by Type</h2>
+              <WasteBreakdown wasteReports={rawStats.waste} />
+            </Card>
+          )}
+
+          {loading && (
+            <Card className="text-center py-20">
+              <p className="eco-text-muted">Loading analytics...</p>
+            </Card>
+          )}
         </div>
       </div>
       <Footer />

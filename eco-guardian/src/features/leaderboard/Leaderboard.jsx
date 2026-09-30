@@ -26,6 +26,11 @@ export default function Leaderboard() {
   const { currentUser } = useAuth();
 
   useEffect(() => {
+    if (!db) {
+      setUsers([]);
+      return;
+    }
+
     const q = query(collection(db, "users"), orderBy("ecoScore", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map((doc) => ({
@@ -144,7 +149,7 @@ export default function Leaderboard() {
       <motion.div layout className="space-y-2">
         <AnimatePresence>
           {filteredUsers.length > 0 ? (
-            filteredUsers.map((user, index) => {
+            filteredUsers.map((user) => {
               const actualRank = users.findIndex((u) => u.id === user.id) + 1;
               const isCurrentUser = user.id === currentUser?.uid;
 

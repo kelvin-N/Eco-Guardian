@@ -1,31 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import Loader from "../../components/ui/Loader";
 import Navbar from "../../components/layout/Navbar";
 import Footer from "../../components/layout/Footer";
+import { getLeaderboard } from "../../services/ecoService";
 
 export default function CommunityLeaderboard() {
   const { currentUser } = useAuth();
   const [view, setView] = useState("global");
 
-  const globalLeaderboard = [
-    { rank: 1, name: "Emma Green", eco: 2450, badge: "🥇" },
-    { rank: 2, name: "Alex Eco", eco: 2150, badge: "🥈" },
-    { rank: 3, name: "Jordan Clean", eco: 1890, badge: "🥉" },
-    { rank: 4, name: "Sam Nature", eco: 1620 },
-    { rank: 5, name: "Taylor Sustain", eco: 1450 },
-  ];
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const friendsLeaderboard = [
-    { rank: 1, name: "You", eco: 980 },
-    { rank: 2, name: "Jane Smith", eco: 850 },
-    { rank: 3, name: "Bob Johnson", eco: 720 },
-  ];
+  // fetch global leaderboard; "friends" view not implemented yet
+  useEffect(() => {
+    getLeaderboard(20)
+      .then((users) => {
+        const formatted = users.map((u, idx) => ({
+          rank: idx + 1,
+          name: u.email || "Unknown",
+          eco: u.ecoScore || 0,
+          badge: idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : undefined,
+        }));
+        setLeaderboard(formatted);
+      })
+      .catch((err) => console.error("failed to load leaderboard", err))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const leaderboard =
-    view === "global" ? globalLeaderboard : friendsLeaderboard;
+  const displayList =
+    view === "global"
+      ? leaderboard
+      : leaderboard.filter((u) => u.name === currentUser?.email);
 
   return (
     <>
@@ -58,6 +67,16 @@ export default function CommunityLeaderboard() {
               Friends Leaderboard
             </Button>
           </div>
+          {loading && (
+            <div className="flex justify-center py-20">
+              <Loader size="lg" />
+            </div>
+          )}
+          {!loading && leaderboard.length === 0 && (
+            <p className="eco-text-muted text-center py-10">
+              No leaderboard data available yet.
+            </p>
+          )}
 
           {/* Leaderboard Table */}
           <Card>
@@ -73,7 +92,7 @@ export default function CommunityLeaderboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {leaderboard.map((user, idx) => (
+                  {displayList.map((user, idx) => (
                     <motion.tr
                       key={user.name}
                       className={`border-t ${

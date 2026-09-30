@@ -11,8 +11,15 @@ import {
  * Helper function to format Firebase error messages with helpful context
  */
 const formatFirebaseError = (error, context = "") => {
-  const errorCode = error?.code || "";
+  let errorCode = error?.code || "";
   const errorMessage = error?.message || "Unknown error";
+
+  // some Firebase codes arrive with extra description after a space or punctuation
+  // e.g. "auth/api-key-not-valid. Please pass a valid API key." – we only want the
+  // canonical portion for our mapping.
+  if (errorCode.includes(" ") || errorCode.includes(".")) {
+    errorCode = errorCode.split(/[\s.]/)[0];
+  }
 
   // Map of Firebase error codes to helpful messages
   const errorMap = {
@@ -24,8 +31,10 @@ const formatFirebaseError = (error, context = "") => {
     },
     "auth/api-key-not-valid": {
       title: "Firebase Configuration Error",
-      message:
-        "Your Firebase API key is not valid. The credentials in .env.local appear to be placeholders or incorrect.",
+      message: `Your Firebase API key is not valid. The credentials in .env.local appear to be placeholders or incorrect.
+
+You can open the FIREBASE_SETUP_GUIDE.md in the project root for step-by-step instructions.`,
+
       hint: "1. Visit Firebase Console → Project Settings → Your apps\n2. Copy the real web configuration\n3. Replace the placeholder values in .env.local\n4. Restart the dev server",
     },
     "auth/invalid-credential": {

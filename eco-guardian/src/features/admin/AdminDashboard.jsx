@@ -12,7 +12,6 @@ export default function AdminDashboard() {
   const [actionMsg, setActionMsg] = useState("");
 
   const fetchUsers = async () => {
-    setLoading(true);
     try {
       const u = await getAllUsers();
       setUsers(u);
@@ -36,6 +35,7 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchUsers();
   }, []);
 

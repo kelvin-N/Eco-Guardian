@@ -9,5 +9,5 @@ export default function AdminRoute({ children }) {
 
   // check role from profile or merged user object
   const role = userProfile?.role || user?.role;
-  return role === "admin" ? children : <Navigate to="/" />;
+  return role === "admin" ? children : <Navigate to="/login" replace />;
 }

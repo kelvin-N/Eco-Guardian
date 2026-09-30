@@ -1,123 +1,130 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from "react";
-import { auth, db } from "../firebase/firebaseConfig";
-import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import {
-  createUser,
-  loginUser,
-  logoutUser,
-  updateUserProfile,
-  resetPassword,
-} from "../firebase/auth";
 
 const AuthContext = createContext();
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
+const STORAGE_KEY = "eco-guardian-demo-user";
+const PROFILE_KEY = "eco-guardian-demo-profile";
 
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [userProfile, setUserProfile] = useState(null); // holds firestore doc with role, etc.
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Wrapper functions that handle errors
-  const signup = async (email, password) => {
-    try {
-      setError(null);
-      return await createUser(email, password);
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
+  const demoUser = {
+    uid: "demo-user-001",
+    email: "demo@ecoguidance.com",
+    displayName: "Demo User",
+    role: "user",
   };
 
-  const login = async (email, password) => {
-    try {
-      setError(null);
-      return await loginUser(email, password);
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  };
+  const [user, setUser] = useState(() => {
+    if (typeof window === "undefined") return null;
+    const savedUser = localStorage.getItem(STORAGE_KEY);
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  const [userProfile, setUserProfile] = useState(() => {
+    if (typeof window === "undefined") return null;
+    const savedProfile = localStorage.getItem(PROFILE_KEY);
+    return savedProfile ? JSON.parse(savedProfile) : null;
+  });
+  const [loading, setLoading] = useState(false);
 
-  const logout = async () => {
-    try {
-      setError(null);
-      return await logoutUser();
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  };
-
-  const updateProfile = async (displayName, photoURL) => {
-    try {
-      setError(null);
-      return await updateUserProfile(displayName, photoURL);
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  };
-
-  const forgotPassword = async (email) => {
-    try {
-      setError(null);
-      return await resetPassword(email);
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  };
-
-  // Persistent auth state with profile lookup
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setLoading(true);
-      if (user) {
-        setCurrentUser(user);
-        try {
-          const profileDoc = await getDoc(doc(db, "users", user.uid));
-          if (profileDoc.exists()) {
-            setUserProfile(profileDoc.data());
-          } else {
-            setUserProfile(null);
-          }
-        } catch (fetchError) {
-          console.error("Failed to fetch user profile:", fetchError);
-          setUserProfile(null);
-        }
-      } else {
-        setCurrentUser(null);
-        setUserProfile(null);
-      }
-      setLoading(false);
-    });
-    return unsubscribe;
-  }, []);
+    if (typeof window === "undefined") return;
+    if (user) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [user]);
 
-  const value = {
-    currentUser,
-    userProfile,
-    // alias for convenience (some components still expect `user`)
-    user: currentUser ? { ...currentUser, ...userProfile } : null,
-    signup,
-    login,
-    logout,
-    loading,
-    error,
-    updateProfile,
-    forgotPassword,
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (userProfile) {
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(userProfile));
+    } else {
+      localStorage.removeItem(PROFILE_KEY);
+    }
+  }, [userProfile]);
+
+  const createDemoProfile = (emailValue) => ({
+    uid: demoUser.uid,
+    email: emailValue || demoUser.email,
+    displayName: (emailValue || demoUser.email).split("@")[0],
+    role: "user",
+  });
+
+  // LOGIN (demo mode)
+  const login = async (email, password) => {
+    setLoading(true);
+
+    await new Promise((res) => setTimeout(res, 500));
+
+    const emailValue = email || demoUser.email;
+    const nextUser = {
+      ...demoUser,
+      email: emailValue,
+      displayName: (emailValue || demoUser.email).split("@")[0],
+    };
+
+    const profile = createDemoProfile(emailValue);
+    setUser(nextUser);
+    setUserProfile(profile);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    }
+    setLoading(false);
+    return true;
+  };
+
+  // SIGNUP (demo mode)
+  const signup = async (email, password) => {
+    setLoading(true);
+
+    await new Promise((res) => setTimeout(res, 500));
+
+    const emailValue = email || demoUser.email;
+    const nextUser = {
+      ...demoUser,
+      email: emailValue,
+      displayName: (emailValue || demoUser.email).split("@")[0],
+      role: "user",
+    };
+
+    setUser(nextUser);
+    const profile = createDemoProfile(emailValue);
+    setUserProfile(profile);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    }
+    setLoading(false);
+    return true;
+  };
+
+  // LOGOUT
+  const logout = async () => {
+    setUser(null);
+    setUserProfile(null);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(PROFILE_KEY);
+    }
   };
 
   return (
-    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+    <AuthContext.Provider
+      value={{
+        user,
+        currentUser: user,
+        userProfile,
+        loading,
+        login,
+        signup,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
   );
 }
+
+export const useAuth = () => useContext(AuthContext);

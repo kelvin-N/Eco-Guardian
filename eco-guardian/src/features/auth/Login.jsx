@@ -34,6 +34,20 @@ export default function Login() {
     setLoading(false);
   };
 
+  const handleDemoLogin = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      await login("demo@ecoguidance.com", "demo123");
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message || "Failed to login with demo account");
+    }
+
+    setLoading(false);
+  };
+
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -44,7 +58,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.18),_transparent_35%),linear-gradient(135deg,_#f0fdf4_0%,_#ffffff_40%,_#eff6ff_100%)] dark:bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.18),_transparent_35%),linear-gradient(135deg,_#020817_0%,_#0f172a_40%,_#111827_100%)] px-4 py-8">
       <motion.div
         className="w-full max-w-md"
         variants={containerVariants}
@@ -58,19 +72,20 @@ export default function Login() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <div className="flex justify-center mb-4">
-            <div className="text-6xl">🌍</div>
+          <div className="flex justify-center mb-5">
+            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-white/80 shadow-lg ring-1 ring-eco-100 dark:bg-slate-900/80 dark:ring-eco-900/60 text-5xl backdrop-blur-sm">
+              🌍
+            </div>
           </div>
           <h1 className="eco-heading-lg mb-2">Welcome Back</h1>
           <p className="eco-text-muted">Sign in to your Eco-Guardian account</p>
-          <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-            <strong>Note:</strong> Admin dashboard `/admin/dashboard` is restricted to
-            users with the admin role.
+          <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+            <strong>Demo mode:</strong> use the quick access button below or sign in manually.
           </p>
         </motion.div>
 
         {/* Card */}
-        <Card>
+        <Card className="rounded-3xl border border-eco-100/80 bg-white/85 dark:border-slate-700 dark:bg-slate-900/80 backdrop-blur-sm">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Error Alert */}
             {error && (
@@ -162,6 +177,22 @@ export default function Login() {
                 loading={loading}
               >
                 {loading ? "Signing In..." : "Sign In"}
+              </Button>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.55 }}
+            >
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleDemoLogin}
+                disabled={loading}
+              >
+                🚀 Continue with demo account
               </Button>
             </motion.div>
 
