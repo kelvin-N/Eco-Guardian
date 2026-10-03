@@ -135,6 +135,23 @@ owner. Do not use test rules on a production bucket.
 npm run dev
 ```
 
+### Step 10: Configure a Vercel Preview
+1. Import the GitHub repository into Vercel.
+2. Set **Root Directory** to `eco-guardian`, build command to `npm run build`,
+   and output directory to `dist`.
+3. Open **Project Settings** → **Environment Variables** and add the six
+   `VITE_FIREBASE_...` variables shown in `.env.example`, using the values from
+   your Firebase web app configuration. Select the **Preview** environment.
+4. Save the variables and redeploy the preview. Vite embeds these values during
+   the build, so an existing deployment will not see them until it is rebuilt.
+5. Add the preview hostname to Firebase Console → **Authentication** →
+   **Settings** → **Authorized domains**.
+
+Configure these values in Vercel, not in a committed `.env` file or GitHub
+source. Do not paste the values into issues, pull requests, or chat. Vite
+client-side Firebase configuration is visible to users of the deployed app;
+Firestore and Storage security must be enforced by Firebase rules.
+
 ---
 
 ## ✅ Verification Checklist
