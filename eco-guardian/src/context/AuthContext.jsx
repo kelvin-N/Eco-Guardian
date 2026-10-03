@@ -1,113 +1,91 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import { doc, onSnapshot } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth, db, firebaseConfigurationError, isFirebaseConfigured } from "../firebase/firebaseConfig";
+import { createUserProfile } from "../services/ecoService";
+import { createUser, loginUser, logoutUser } from "../firebase/auth";
 
 const AuthContext = createContext();
 
-const STORAGE_KEY = "eco-guardian-demo-user";
-const PROFILE_KEY = "eco-guardian-demo-profile";
-
 export function AuthProvider({ children }) {
-  const demoUser = {
-    uid: "demo-user-001",
-    email: "demo@ecoguidance.com",
-    displayName: "Demo User",
-    role: "user",
-  };
-
-  const [user, setUser] = useState(() => {
-    if (typeof window === "undefined") return null;
-    const savedUser = localStorage.getItem(STORAGE_KEY);
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-  const [userProfile, setUserProfile] = useState(() => {
-    if (typeof window === "undefined") return null;
-    const savedProfile = localStorage.getItem(PROFILE_KEY);
-    return savedProfile ? JSON.parse(savedProfile) : null;
-  });
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (user) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
+    if (!auth) {
+      setLoading(false);
+      return undefined;
     }
-  }, [user]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (userProfile) {
-      localStorage.setItem(PROFILE_KEY, JSON.stringify(userProfile));
-    } else {
-      localStorage.removeItem(PROFILE_KEY);
-    }
-  }, [userProfile]);
+    let unsubscribeProfile;
+    const unsubscribeAuth = onAuthStateChanged(auth, (authenticatedUser) => {
+      unsubscribeProfile?.();
+      setUser(authenticatedUser);
 
-  const createDemoProfile = (emailValue) => ({
-    uid: demoUser.uid,
-    email: emailValue || demoUser.email,
-    displayName: (emailValue || demoUser.email).split("@")[0],
-    role: "user",
-  });
+      if (!authenticatedUser) {
+        setUserProfile(null);
+        setLoading(false);
+        return;
+      }
 
-  // LOGIN (demo mode)
+      const fallbackProfile = {
+        uid: authenticatedUser.uid,
+        email: authenticatedUser.email,
+        displayName: authenticatedUser.displayName || authenticatedUser.email?.split("@")[0] || "User",
+        role: "user",
+      };
+
+      if (!db) {
+        setUserProfile(fallbackProfile);
+        setLoading(false);
+        return;
+      }
+
+      unsubscribeProfile = onSnapshot(
+        doc(db, "users", authenticatedUser.uid),
+        (profileSnapshot) => {
+          if (profileSnapshot.exists()) {
+            setUserProfile({ ...fallbackProfile, ...profileSnapshot.data() });
+          } else {
+            setUserProfile(fallbackProfile);
+            createUserProfile(authenticatedUser.uid, authenticatedUser.email).catch((error) => {
+              console.error("Failed to initialize user profile:", error);
+            });
+          }
+          setLoading(false);
+        },
+        (error) => {
+          console.error("Failed to load user profile:", error);
+          setUserProfile(fallbackProfile);
+          setLoading(false);
+        }
+      );
+    });
+
+    return () => {
+      unsubscribeAuth();
+      unsubscribeProfile?.();
+    };
+  }, []);
+
   const login = async (email, password) => {
-    setLoading(true);
-
-    await new Promise((res) => setTimeout(res, 500));
-
-    const emailValue = email || demoUser.email;
-    const nextUser = {
-      ...demoUser,
-      email: emailValue,
-      displayName: (emailValue || demoUser.email).split("@")[0],
-    };
-
-    const profile = createDemoProfile(emailValue);
-    setUser(nextUser);
-    setUserProfile(profile);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
-      localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-    }
-    setLoading(false);
+    if (!isFirebaseConfigured) throw new Error(firebaseConfigurationError);
+    await loginUser(email, password);
     return true;
   };
 
-  // SIGNUP (demo mode)
   const signup = async (email, password) => {
-    setLoading(true);
-
-    await new Promise((res) => setTimeout(res, 500));
-
-    const emailValue = email || demoUser.email;
-    const nextUser = {
-      ...demoUser,
-      email: emailValue,
-      displayName: (emailValue || demoUser.email).split("@")[0],
-      role: "user",
-    };
-
-    setUser(nextUser);
-    const profile = createDemoProfile(emailValue);
-    setUserProfile(profile);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
-      localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-    }
-    setLoading(false);
+    if (!isFirebaseConfigured) throw new Error(firebaseConfigurationError);
+    const newUser = await createUser(email, password);
+    await createUserProfile(newUser.uid, newUser.email);
     return true;
   };
 
-  // LOGOUT
   const logout = async () => {
-    setUser(null);
-    setUserProfile(null);
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(PROFILE_KEY);
-    }
+    if (!auth) throw new Error(firebaseConfigurationError);
+    await logoutUser();
   };
 
   return (
@@ -117,6 +95,7 @@ export function AuthProvider({ children }) {
         currentUser: user,
         userProfile,
         loading,
+        configurationError: firebaseConfigurationError,
         login,
         signup,
         logout,

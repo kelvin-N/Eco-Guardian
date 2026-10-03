@@ -2,8 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
+button,
+a,
+input,
+select,
+textarea {
   @apply transition-colors duration-200;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 html {
@@ -34,11 +49,6 @@ body {
   /* Eco Cards */
   .eco-card {
     @apply bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700;
-  }
-
-  /* subtle pulse animation in dark mode to differentiate cards */
-  .eco-card.dark-mode-pulse {
-    @apply animate-pulse;
   }
 
   /* simple ripple for buttons */

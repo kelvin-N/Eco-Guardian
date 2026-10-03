@@ -17,7 +17,7 @@ Eco-Guardian is a mobile application designed to encourage sustainable living by
 
 ## 🛠️ Tech Stack
 
-- React Native (Expo)
+- React web aplication
 - TypeScript
 - Firebase Authentication
 - Firebase Firestore

@@ -23,7 +23,11 @@ export default function useEcoScore() {
   const [achievements, setAchievements] = useState([]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !db) {
+      setEcoScore(0);
+      setAchievements([]);
+      return;
+    }
 
     const userRef = doc(db, "users", user.uid);
 
@@ -39,6 +43,8 @@ export default function useEcoScore() {
   }, [user]);
 
   const checkAchievements = async (newScore) => {
+    if (!db || !user) return;
+
     const unlockedIds = achievements.map((a) => a.id);
 
     const newAchievements = ACHIEVEMENTS.filter(
@@ -62,7 +68,7 @@ export default function useEcoScore() {
   };
 
   const addEcoPoint = async () => {
-    if (!user) return;
+    if (!user || !db) return;
 
     const userRef = doc(db, "users", user.uid);
 

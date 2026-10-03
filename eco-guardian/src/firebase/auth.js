@@ -1,6 +1,9 @@
-import { auth } from "./firebaseConfig";
+import { auth, firebaseConfigurationError } from "./firebaseConfig";
 import {
+  browserLocalPersistence,
+  browserSessionPersistence,
   createUserWithEmailAndPassword,
+  setPersistence,
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
@@ -36,6 +39,12 @@ const formatFirebaseError = (error, context = "") => {
 You can open the FIREBASE_SETUP_GUIDE.md in the project root for step-by-step instructions.`,
 
       hint: "1. Visit Firebase Console → Project Settings → Your apps\n2. Copy the real web configuration\n3. Replace the placeholder values in .env.local\n4. Restart the dev server",
+    },
+    "auth/network-request-failed": {
+      title: "Firebase Connection Error",
+      message:
+        "The app couldn't reach Firebase Authentication. This is usually caused by a lost internet connection or a network setting that blocks Firebase requests.",
+      hint: "Check your internet connection, then check whether a VPN, firewall, or browser extension is blocking the request. Confirm your .env.local contains the real Firebase web config and restart the dev server after changing it.",
     },
     "auth/invalid-credential": {
       title: "Invalid Email or Password",
@@ -88,6 +97,7 @@ You can open the FIREBASE_SETUP_GUIDE.md in the project root for step-by-step in
  * Create a new user account with email and password
  */
 export const createUser = async (email, password) => {
+  if (!auth) throw new Error(firebaseConfigurationError);
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     return userCredential.user;
@@ -101,8 +111,10 @@ export const createUser = async (email, password) => {
 /**
  * Sign in with email and password
  */
-export const loginUser = async (email, password) => {
+export const loginUser = async (email, password, rememberMe = true) => {
+  if (!auth) throw new Error(firebaseConfigurationError);
   try {
+    await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
   } catch (error) {
@@ -116,6 +128,7 @@ export const loginUser = async (email, password) => {
  * Sign out current user
  */
 export const logoutUser = async () => {
+  if (!auth) throw new Error(firebaseConfigurationError);
   try {
     await signOut(auth);
   } catch (error) {
@@ -129,6 +142,7 @@ export const logoutUser = async () => {
  * Update user profile
  */
 export const updateUserProfile = async (displayName, photoURL) => {
+  if (!auth) throw new Error(firebaseConfigurationError);
   try {
     if (auth.currentUser) {
       await updateProfile(auth.currentUser, {
@@ -147,6 +161,7 @@ export const updateUserProfile = async (displayName, photoURL) => {
  * Send password reset email
  */
 export const resetPassword = async (email) => {
+  if (!auth) throw new Error(firebaseConfigurationError);
   try {
     await sendPasswordResetEmail(auth, email);
   } catch (error) {
@@ -160,5 +175,5 @@ export const resetPassword = async (email) => {
  * Get current user
  */
 export const getCurrentUser = () => {
-  return auth.currentUser;
+  return auth?.currentUser || null;
 };

@@ -1,17 +1,23 @@
 // src/features/dashboard/ActivityLog.jsx
 import { useEffect, useState } from "react";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
-import { db, auth } from "../../firebase/firebaseConfig.js";
+import { db } from "../../firebase/firebaseConfig.js";
+import { useAuth } from "../../context/AuthContext";
 
 export default function ActivityLog() {
+  const { user: currentUser } = useAuth();
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth.currentUser) return;
+    if (!db || !currentUser) {
+      setActivities([]);
+      setLoading(false);
+      return;
+    }
 
     const q = query(
-      collection(db, "users", auth.currentUser.uid, "activities"),
+      collection(db, "users", currentUser.uid, "activities"),
       orderBy("timestamp", "desc")
     );
 
@@ -22,7 +28,7 @@ export default function ActivityLog() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [currentUser]);
 
   return (
     <div className="p-6 bg-blue-100 dark:bg-gray-700 rounded-xl shadow-md">

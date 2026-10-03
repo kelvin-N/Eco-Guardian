@@ -4,20 +4,23 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
+import { resetPassword } from "../../firebase/auth";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-  const { login } = useAuth();
+  const { login, configurationError } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setNotice("");
 
     if (!email || !password) {
       setError("Please fill in all fields");
@@ -26,26 +29,31 @@ export default function Login() {
 
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email, password, rememberMe);
       navigate("/dashboard");
     } catch (err) {
       setError(err.message || "Failed to login");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleDemoLogin = async () => {
-    setLoading(true);
+  const handlePasswordReset = async () => {
     setError("");
-
-    try {
-      await login("demo@ecoguidance.com", "demo123");
-      navigate("/dashboard");
-    } catch (err) {
-      setError(err.message || "Failed to login with demo account");
+    setNotice("");
+    if (!email) {
+      setError("Enter your email address first, then request a password reset.");
+      return;
     }
-
-    setLoading(false);
+    setLoading(true);
+    try {
+      await resetPassword(email);
+      setNotice("Password reset email sent. Check your inbox.");
+    } catch (err) {
+      setError(err.message || "Failed to send password reset email");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const containerVariants = {
@@ -79,14 +87,17 @@ export default function Login() {
           </div>
           <h1 className="eco-heading-lg mb-2">Welcome Back</h1>
           <p className="eco-text-muted">Sign in to your Eco-Guardian account</p>
-          <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-            <strong>Demo mode:</strong> use the quick access button below or sign in manually.
-          </p>
         </motion.div>
 
         {/* Card */}
         <Card className="rounded-3xl border border-eco-100/80 bg-white/85 dark:border-slate-700 dark:bg-slate-900/80 backdrop-blur-sm">
           <form onSubmit={handleSubmit} className="space-y-5">
+            {configurationError && (
+              <div role="alert" className="eco-alert-error">
+                <span className="flex-1 text-sm leading-relaxed">{configurationError}</span>
+              </div>
+            )}
+
             {/* Error Alert */}
             {error && (
               <motion.div
@@ -155,13 +166,17 @@ export default function Login() {
                   Remember me
                 </span>
               </label>
-              <a
-                href="#forgot"
-                className="text-sm text-eco-600 dark:text-eco-400 hover:underline"
+              <button
+                type="button"
+                onClick={handlePasswordReset}
+                disabled={loading || Boolean(configurationError)}
+                className="text-sm text-eco-600 dark:text-eco-400 hover:underline disabled:opacity-50"
               >
                 Forgot password?
-              </a>
+              </button>
             </motion.div>
+
+            {notice && <p role="status" className="text-sm text-eco-700 dark:text-eco-300">{notice}</p>}
 
             {/* Submit Button */}
             <motion.div
@@ -173,52 +188,13 @@ export default function Login() {
                 type="submit"
                 variant="primary"
                 className="w-full"
-                disabled={loading}
+                disabled={loading || Boolean(configurationError)}
                 loading={loading}
               >
                 {loading ? "Signing In..." : "Sign In"}
               </Button>
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.55 }}
-            >
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={handleDemoLogin}
-                disabled={loading}
-              >
-                🚀 Continue with demo account
-              </Button>
-            </motion.div>
-
-            {/* Divider */}
-            <div className="eco-divider"></div>
-
-            {/* Social Login (Optional) */}
-            <motion.div
-              className="space-y-2"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-            >
-              <p className="text-xs eco-text-subtle text-center">Or continue with</p>
-              <div className="flex gap-3">
-                <button className="flex-1 py-2 px-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 hover:border-eco-400 dark:hover:border-eco-400 transition text-lg">
-                  🔵
-                </button>
-                <button className="flex-1 py-2 px-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 hover:border-eco-400 dark:hover:border-eco-400 transition text-lg">
-                  🔴
-                </button>
-                <button className="flex-1 py-2 px-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 hover:border-eco-400 dark:hover:border-eco-400 transition text-lg">
-                  🍎
-                </button>
-              </div>
-            </motion.div>
           </form>
         </Card>
 

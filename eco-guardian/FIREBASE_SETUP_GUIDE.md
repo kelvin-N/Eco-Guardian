@@ -73,15 +73,9 @@ To promote an account:
 3. Edit the `role` field and change its value to `admin`.
 4. Save the document.
 
-Alternatively you can run the following client-side helper in the browser
-console (after importing `db` from `src/firebase/firebaseConfig`):
-
-```js
-import { doc, updateDoc } from "firebase/firestore";
-
-// replace UID with the user you want to promote
-await updateDoc(doc(db, "users", "UID"), { role: "admin" });
-```
+Grant the first admin role only through the trusted Firebase Console. After
+that, the rules permit an existing admin to change roles through the protected
+admin dashboard. Regular users cannot change their own or anyone else's role.
 
 After doing this, the next time that user logs in they will be able to access
 `/admin/dashboard` (the admin panel).
@@ -92,9 +86,9 @@ admin account to reach.
 ### Step 7: Set Up Firestore Database (for data storage)
 1. In Firebase Console, go to **Build** → **Firestore Database**
 2. Click "Create database"
-3. Start in **Test mode** (for development)
+3. Use **Production mode** for any production project
 4. Click "Create"
-5. Note: Remember to change to Production rules before deploying!
+5. Deploy reviewed Firestore rules before allowing application traffic.
 
 #### Collections used by Eco-Guardian
 The app relies on a few top-level collections which are created automatically
@@ -109,44 +103,30 @@ it's useful to know what they are:
 - `wasteReports` – logged recycling/clean-up events with `type`, `amount`,
   and `location`.
 
-Later features such as analytics and the leaderboard read from these
-collections. You'll want to tighten up security rules before going to
-production; a simple example rule could allow users to read/write only their
-own documents and permit admins to query the `users` collection.
+Do not copy permissive rules from tutorials into production. Rules must match
+the application's actual reads and writes, validate collection fields, prevent
+users from changing their own role or score, and restrict personal data to
+authorized readers. The starter rules are in `firestore.rules`. Review them,
+then copy their contents into the Firestore **Rules** editor and use **Test**
+to confirm that a signed-in user can create and read their own profile, cannot
+read another user's profile, and cannot change a score or role. Deploy only
+after those checks pass.
 
-Example security snippet (Firestore rules):
-```rules
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId} {
-      allow read, write: if request.auth.uid == userId || isAdmin();
-    }
-    match /activities/{doc} {
-      allow create: if request.auth.uid != null;
-      allow read: if request.auth.uid == resource.data.uid || isAdmin();
-    }
-    match /carbonActivities/{doc} {
-      allow create: if request.auth.uid != null;
-      allow read: if request.auth.uid == resource.data.uid || isAdmin();
-    }
-    match /wasteReports/{doc} {
-      allow create: if request.auth.uid != null;
-      allow read: if request.auth.uid == resource.data.uid || isAdmin();
-    }
-
-    function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-  }
-}
-```
+These rules intentionally deny client access to all collections other than
+user profiles. Activity logging, badges, score updates, and the leaderboard
+will remain unavailable until those features use a trusted backend and have
+their own reviewed rules. Grant the first admin through the trusted Firebase
+Console; only an existing admin can change roles through the protected admin
+dashboard. Storage has separate rules and is not configured by this file.
 
 ### Step 8: Set Up Firebase Storage (for file uploads)
 1. In Firebase Console, go to **Build** → **Storage**
 2. Click "Get started"
-3. Start in **Test mode**
+3. Use **Production mode** for a production project
 4. Click "Create"
+
+Deploy Storage rules that restrict uploads and reads to the authenticated
+owner. Do not use test rules on a production bucket.
 
 ### Step 9: Restart Development Server
 ```bash
@@ -192,6 +172,10 @@ If you lose your credentials:
 ### Error: "Firebase: Error (auth/configuration-not-found)"
 - **Cause**: Firebase config not loaded properly
 - **Fix**: Check `.env.local` is in project root, restart dev server
+
+### Error: "Firebase: Error (auth/network-request-failed)"
+- **Cause**: The browser could not reach Firebase Authentication, often because of a connection issue or a VPN, firewall, or browser extension blocking the request.
+- **Fix**: Check your internet connection and try again. Confirm `.env.local` contains real Firebase web configuration values rather than placeholders, then restart the dev server. If the error continues, try without network filters and verify the Firebase project is available.
 
 ### Can't create account but no error message
 - **Cause**: Authentication not enabled in Firebase

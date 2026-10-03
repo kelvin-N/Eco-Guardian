@@ -21,15 +21,15 @@ const getMedalEmoji = (rank) => {
 
 export default function Leaderboard() {
   const [users, setUsers] = useState([]);
+  const [error, setError] = useState("");
   const [view, setView] = useState("global");
   const [searchTerm, setSearchTerm] = useState("");
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
 
   useEffect(() => {
-    if (!db) {
-      setUsers([]);
-      return;
-    }
+    if (!db) return;
+
+    if (userProfile?.role !== "admin") return;
 
     const q = query(collection(db, "users"), orderBy("ecoScore", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -38,9 +38,13 @@ export default function Leaderboard() {
         ...doc.data(),
       }));
       setUsers(data);
+      setError("");
+    }, (loadError) => {
+      console.error("Failed to load leaderboard:", loadError);
+      setError("Unable to load the leaderboard right now.");
     });
     return () => unsubscribe();
-  }, []);
+  }, [userProfile?.role]);
 
   const displayedUsers =
     view === "friends" && currentUser
@@ -61,10 +65,10 @@ export default function Leaderboard() {
 
   const currentUserRank = getRank();
   const getCurrentUserStats = () => {
-    const user = users.find((u) => u.id === currentUser?.uid);
+    const user = users.find((entry) => entry.id === currentUser?.uid);
     return {
       rank: currentUserRank,
-      score: user?.ecoScore || 0,
+      score: userProfile?.ecoScore ?? user?.ecoScore ?? 0,
     };
   };
 
@@ -115,7 +119,7 @@ export default function Leaderboard() {
             <div>
               <p className="eco-text-subtle text-sm mb-1">Your Rank</p>
               <p className="eco-heading-lg text-eco-600 dark:text-eco-400">
-                #{stats.rank}
+                {stats.rank === "-" ? "Unavailable" : `#${stats.rank}`}
               </p>
             </div>
             <div>
@@ -148,7 +152,15 @@ export default function Leaderboard() {
       {/* Leaderboard List */}
       <motion.div layout className="space-y-2">
         <AnimatePresence>
-          {filteredUsers.length > 0 ? (
+          {userProfile?.role !== "admin" ? (
+            <p role="status" className="eco-text-muted text-center py-8">
+              The leaderboard is unavailable until public leaderboard access is configured.
+            </p>
+          ) : error ? (
+            <p role="status" className="eco-text-muted text-center py-8">
+              {error}
+            </p>
+          ) : filteredUsers.length > 0 ? (
             filteredUsers.map((user) => {
               const actualRank = users.findIndex((u) => u.id === user.id) + 1;
               const isCurrentUser = user.id === currentUser?.uid;

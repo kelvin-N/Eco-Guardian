@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { db } from "../../firebase/firebaseConfig";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { useAuth } from "../../context/AuthContext";
 import { motion } from "framer-motion";
 import Navbar from "../../components/layout/Navbar";
 import Footer from "../../components/layout/Footer";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
-import Loader from "../../components/ui/Loader";
 import CO2Chart from "../../components/charts/CO2Chart";
 import Leaderboard from "../leaderboard/Leaderboard";
 import { getCarbonActivities } from "../../services/ecoService";
@@ -132,65 +130,19 @@ function GoalProgress() {
 
 // Dashboard Main Component
 export default function Dashboard() {
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
   const navigate = useNavigate();
-  const [_users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [ecoScore, setEcoScore] = useState(0);
-  const [rank, setRank] = useState("-");
   const [carbonActivities, setCarbonActivities] = useState([]);
-
-  useEffect(() => {
-    if (!currentUser) return;
-
-    if (!db) {
-      setUsers([]);
-      setRank("-");
-      setEcoScore(0);
-      setLoading(false);
-      return;
-    }
-
-    const q = query(collection(db, "users"), orderBy("ecoScore", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const usersData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setUsers(usersData);
-
-      const idx = usersData.findIndex((u) => u.id === currentUser.uid);
-      setRank(idx === -1 ? "-" : idx + 1);
-
-      const userScore = usersData.find((u) => u.id === currentUser.uid)
-        ?.ecoScore || 0;
-      setEcoScore(userScore);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [currentUser]);
 
   // Load carbon activities for chart
   useEffect(() => {
     if (!currentUser) return;
-    if (!db) {
-      setCarbonActivities([]);
-      return;
-    }
+    if (!db) return;
 
     getCarbonActivities(currentUser.uid)
       .then((acts) => setCarbonActivities(acts))
       .catch((err) => console.error("failed to load activities", err));
   }, [currentUser]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader size="lg" />
-      </div>
-    );
-  }
 
   if (!currentUser) {
     return (
@@ -219,8 +171,6 @@ export default function Dashboard() {
       transition: { duration: 0.5 },
     },
   };
-
-  const rankLabel = rank === "-" ? "New" : `#${rank}`;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -263,7 +213,7 @@ export default function Dashboard() {
                   <div className="text-5xl mb-2">🏆</div>
                   <p className="eco-text-subtle mb-1">Your Rank</p>
                   <p className="eco-heading-lg text-eco-600 dark:text-eco-400">
-                    {rankLabel}
+                    Not available
                   </p>
                 </div>
               </Card>
@@ -275,7 +225,7 @@ export default function Dashboard() {
                   <div className="text-5xl mb-2">🌟</div>
                   <p className="eco-text-subtle mb-1">Eco Score</p>
                   <p className="eco-heading-lg text-eco-600 dark:text-eco-400">
-                    {ecoScore}
+                    {userProfile?.ecoScore ?? 0}
                   </p>
                 </div>
               </Card>

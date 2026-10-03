@@ -5,13 +5,7 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// ==================================================
-// DEMO MODE
-// Set to false when you have real Firebase credentials
-// ==================================================
-export const DEMO_MODE = true;
-
-// Firebase configuration from .env.local
+// Firebase configuration from environment variables.
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -21,53 +15,40 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Detect placeholder values
-const isPlaceholder = (val) =>
-  !val ||
-  /abc123|1234567|PASTE|XXXXXXXXXXXXXXXXXXXX/.test(String(val));
-
-// Required Firebase fields
 const requiredFields = [
   "apiKey",
   "authDomain",
   "projectId",
+  "storageBucket",
+  "messagingSenderId",
+  "appId",
 ];
 
-const missingFields = requiredFields.filter(
-  (field) => isPlaceholder(firebaseConfig[field])
-);
+const missingFields = requiredFields.filter((field) => {
+  const value = firebaseConfig[field];
+  return !value || /abc123|abcdef|xxxx|1234567890|PASTE|X{8,}|your-project/i.test(value);
+});
 
-if (!DEMO_MODE && missingFields.length > 0) {
-  console.error(`
-❌ Firebase Configuration Error
-
-Missing or invalid credentials:
-${missingFields.join(", ")}
-
-Please update your .env.local file with real Firebase values.
-`);
-}
-
-// Initialize Firebase only when:
-// 1. Demo mode is OFF
-// 2. Credentials are valid
 let app = null;
+let firebaseConfigurationError = "";
 
-if (!DEMO_MODE && missingFields.length === 0) {
+if (missingFields.length === 0) {
   try {
     app = initializeApp(firebaseConfig);
-    console.log("✅ Firebase initialized successfully");
   } catch (firebaseError) {
-    console.error("❌ Failed to initialize Firebase:", firebaseError);
+    console.error("Failed to initialize Firebase:", firebaseError);
+    firebaseConfigurationError = "Firebase could not initialize. Check the project configuration and restart the app.";
   }
-} else if (DEMO_MODE) {
-  console.log("🧪 Running in DEMO MODE (Firebase disabled)");
+} else {
+  const missingVariables = missingFields.map((field) =>
+    `VITE_FIREBASE_${field.replace(/[A-Z]/g, (letter) => `_${letter}`).toUpperCase()}`
+  );
+  firebaseConfigurationError = `Firebase setup is incomplete. Replace missing or placeholder values in .env.local with your real Firebase project settings: ${missingVariables.join(", ")}`;
+  console.error(firebaseConfigurationError);
 }
 
-// Exports
+export const isFirebaseConfigured = Boolean(app);
+export { firebaseConfigurationError };
 export const auth = app ? getAuth(app) : null;
 export const db = app ? getFirestore(app) : null;
 export const storage = app ? getStorage(app) : null;
-
-// Helper flag
-export const isFirebaseConfigured = !!app;

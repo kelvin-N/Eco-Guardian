@@ -1,9 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
-// Firebase (now safe to be null)
-import { DEMO_MODE, isFirebaseConfigured } from "./firebase/firebaseConfig";
-
 import Login from "./features/auth/Login";
 import SignUp from "./features/auth/SignUp";
 import Dashboard from "./features/dashboard/Dashboard";
@@ -52,15 +49,6 @@ function ProtectedRoute({ children }) {
 // App
 // -------------------------------
 export default function App() {
-  // DO NOT BLOCK APP IN DEMO MODE
-  const isBlocked = !isFirebaseConfigured && !DEMO_MODE;
-
-  if (isBlocked) {
-    console.error(
-      "Firebase not configured. Running in demo mode with limited backend."
-    );
-  }
-
   return (
     <AuthProvider>
       <Router>

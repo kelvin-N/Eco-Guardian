@@ -13,7 +13,7 @@ export default function Signup() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const { signup } = useAuth();
+  const { signup, configurationError } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -44,8 +44,9 @@ export default function Signup() {
       setTimeout(() => navigate("/dashboard"), 1500);
     } catch (err) {
       setError(err.message || "Failed to create account");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const containerVariants = {
@@ -82,6 +83,12 @@ export default function Signup() {
         {/* Card */}
         <Card>
           <form onSubmit={handleSubmit} className="space-y-5">
+            {configurationError && (
+              <div role="alert" className="eco-alert-error">
+                <span className="flex-1 text-sm leading-relaxed">{configurationError}</span>
+              </div>
+            )}
+
             {/* Error Alert */}
             {error && (
               <motion.div
@@ -175,7 +182,7 @@ export default function Signup() {
                 type="submit"
                 variant="primary"
                 className="w-full"
-                disabled={loading}
+                disabled={loading || Boolean(configurationError)}
                 loading={loading}
               >
                 {loading ? "Creating Account..." : "Create Account"}
