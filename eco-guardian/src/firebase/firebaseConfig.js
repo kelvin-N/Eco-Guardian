@@ -43,7 +43,10 @@ if (missingFields.length === 0) {
   const missingVariables = missingFields.map((field) =>
     `VITE_FIREBASE_${field.replace(/[A-Z]/g, (letter) => `_${letter}`).toUpperCase()}`
   );
-  firebaseConfigurationError = `Firebase setup is incomplete. Replace missing or placeholder values in .env.local with your real Firebase project settings: ${missingVariables.join(", ")}`;
+  const setupInstructions = import.meta.env.PROD
+    ? "Add these variables in your hosting provider's environment settings for the correct deployment environment, then rebuild and redeploy. In Vercel, open Project Settings → Environment Variables and select Preview or Production as appropriate."
+    : "Add your real Firebase web app settings to .env.local in the project root, then restart the dev server.";
+  firebaseConfigurationError = `Firebase setup is incomplete. Missing or placeholder variables: ${missingVariables.join(", ")}. ${setupInstructions} Find the values in Firebase Console → Project settings → Your apps. Do not commit environment files.`;
   console.error(firebaseConfigurationError);
 }
 
