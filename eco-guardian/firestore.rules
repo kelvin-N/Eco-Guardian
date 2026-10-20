@@ -16,28 +16,467 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    function validEvent(data) {
+      return data.keys().hasOnly([
+          'title', 'description', 'location', 'startsAt', 'createdAt', 'createdBy'
+        ])
+        && data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 100
+        && data.description is string
+        && data.description.size() <= 1000
+        && data.location is string
+        && data.location.size() > 0
+        && data.location.size() <= 160
+        && data.startsAt is timestamp
+        && data.createdAt is timestamp
+        && data.createdBy is string;
+    }
+
+    function validProductImage(image, userId, productId) {
+      return image is map
+        && image.keys().hasOnly(['path', 'url'])
+        && image.keys().hasAll(['path', 'url'])
+        && image.path is string
+        && image.path.matches(
+          'products/' + userId + '/' + productId + '/image-[1-5]'
+        )
+        && image.url is string
+        && image.url.matches('https://firebasestorage.googleapis.com/.*');
+    }
+
+    function validProductImages(data, productId) {
+      return !('images' in data)
+        || (
+          data.images is list
+          && data.images.size() <= 5
+          && (data.images.size() < 1
+            || validProductImage(data.images[0], data.sellerId, productId))
+          && (data.images.size() < 2
+            || validProductImage(data.images[1], data.sellerId, productId))
+          && (data.images.size() < 3
+            || validProductImage(data.images[2], data.sellerId, productId))
+          && (data.images.size() < 4
+            || validProductImage(data.images[3], data.sellerId, productId))
+          && (data.images.size() < 5
+            || validProductImage(data.images[4], data.sellerId, productId))
+        );
+    }
+
+    function validProduct(data, productId) {
+      return data.keys().hasOnly([
+          'title', 'description', 'category', 'price', 'stock', 'sellerId',
+          'createdAt', 'currency', 'reservedStock', 'images'
+        ])
+        && data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 100
+        && data.description is string
+        && data.description.size() <= 1000
+        && data.category in ['Reusable', 'Home', 'Garden', 'Personal care', 'Other']
+        && data.price is number
+        && data.price > 0
+        && data.price <= 100000
+        && data.stock is int
+        && data.stock >= 0
+        && data.stock <= 1000
+        && data.sellerId is string
+        && data.createdAt is timestamp
+        && data.currency == 'GHS'
+        && validProductImages(data, productId)
+        && (!('reservedStock' in data)
+          || (data.reservedStock is int && data.reservedStock >= 0));
+    }
+
+    function validScoredActivityUpdate(userId, collectionName) {
+      let recordId = request.resource.data.lastAwardedRecordId;
+      let recordPath = /databases/$(database)/documents/$(collectionName)/$(recordId);
+      let record = getAfter(recordPath).data;
+      let leaderboard = getAfter(
+        /databases/$(database)/documents/leaderboard/$(userId)
+      ).data;
+
+      return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['displayName', 'ecoScore', 'lastAwardedRecordId'])
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasAll(['ecoScore', 'lastAwardedRecordId'])
+        && request.resource.data.ecoScore is int
+        && resource.data.ecoScore is int
+        && request.resource.data.lastAwardedRecordId is string
+        && request.resource.data.lastAwardedRecordId
+          != resource.data.get('lastAwardedRecordId', '')
+        && !exists(recordPath)
+        && existsAfter(recordPath)
+        && record.uid == userId
+        && record.createdAt == request.time
+        && record.points is int
+        && record.points > 0
+        && request.resource.data.ecoScore == resource.data.ecoScore + record.points
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 80
+        && existsAfter(
+          /databases/$(database)/documents/leaderboard/$(userId)
+        )
+        && leaderboard.ecoScore == request.resource.data.ecoScore
+        && leaderboard.displayName == request.resource.data.displayName
+        && leaderboard.updatedAt == request.time;
+    }
+
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
 
       allow create: if isOwner(userId)
-        && request.resource.data.keys().hasOnly(['email', 'ecoScore', 'role', 'createdAt'])
-        && request.resource.data.keys().hasAll(['email', 'ecoScore', 'role', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['email', 'displayName', 'ecoScore', 'role', 'createdAt'])
+        && request.resource.data.keys().hasAll(['email', 'displayName', 'ecoScore', 'role', 'createdAt'])
         && request.resource.data.email == request.auth.token.email
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 80
         && request.resource.data.ecoScore == 0
         && request.resource.data.role == 'user'
         && request.resource.data.createdAt == request.time;
 
       allow update: if (
           isOwner(userId)
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName'])
-          && request.resource.data.displayName is string
-          && request.resource.data.displayName.size() <= 80
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['displayName', 'photoURL'])
+          && (!request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['displayName'])
+            || (
+              request.resource.data.displayName is string
+              && request.resource.data.displayName.size() <= 80
+            ))
+          && (!request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['photoURL'])
+            || request.resource.data.photoURL == null
+            || (
+              request.resource.data.photoURL is string
+              && request.resource.data.photoURL.size() <= 2048
+              && request.resource.data.photoURL.matches(
+                'https://firebasestorage.googleapis.com/.*'
+              )
+            ))
         ) || (
           isAdmin()
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
           && request.resource.data.role in ['user', 'admin']
+        ) || (
+          isOwner(userId)
+          && validScoredActivityUpdate(userId, 'activities')
+        ) || (
+          isOwner(userId)
+          && validScoredActivityUpdate(userId, 'wasteReports')
         );
+
+      match /eventRsvps/{eventId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && request.resource.data.keys().hasOnly(['eventId', 'userId', 'createdAt'])
+          && request.resource.data.eventId == eventId
+          && request.resource.data.userId == userId
+          && request.resource.data.createdAt == request.time
+          && exists(/databases/$(database)/documents/events/$(eventId));
+        allow delete: if isOwner(userId);
+      }
+
+      match /cart/{productId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && request.resource.data.keys().hasOnly(['productId', 'quantity', 'updatedAt'])
+          && request.resource.data.productId == productId
+          && request.resource.data.quantity is int
+          && request.resource.data.quantity > 0
+          && request.resource.data.updatedAt == request.time
+          && exists(/databases/$(database)/documents/products/$(productId))
+          && get(/databases/$(database)/documents/products/$(productId)).data.currency == 'GHS'
+          && get(/databases/$(database)/documents/products/$(productId)).data.sellerId != userId
+          && request.resource.data.quantity <= get(/databases/$(database)/documents/products/$(productId)).data.stock;
+        allow delete: if isOwner(userId);
+      }
+
+      match /learningProgress/{lessonId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && request.resource.data.keys().hasOnly([
+            'lessonId', 'attempts', 'bestScore', 'completed', 'updatedAt'
+          ])
+          && request.resource.data.keys().hasAll([
+            'lessonId', 'attempts', 'bestScore', 'completed', 'updatedAt'
+          ])
+          && request.resource.data.lessonId == lessonId
+          && request.resource.data.attempts == 1
+          && request.resource.data.bestScore is int
+          && request.resource.data.bestScore >= 0
+          && request.resource.data.bestScore <= 100
+          && request.resource.data.completed is bool
+          && request.resource.data.updatedAt == request.time;
+        allow update: if isOwner(userId)
+          && request.resource.data.keys().hasOnly([
+            'lessonId', 'attempts', 'bestScore', 'completed', 'updatedAt'
+          ])
+          && request.resource.data.lessonId == lessonId
+          && request.resource.data.lessonId == resource.data.lessonId
+          && request.resource.data.attempts == resource.data.attempts + 1
+          && request.resource.data.bestScore is int
+          && request.resource.data.bestScore >= resource.data.bestScore
+          && request.resource.data.bestScore <= 100
+          && request.resource.data.completed is bool
+          && (!resource.data.completed || request.resource.data.completed)
+          && request.resource.data.updatedAt == request.time;
+        allow delete: if false;
+      }
+    }
+
+    match /activities/{activityId} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid', 'activity', 'points', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.activity is string
+        && request.resource.data.activity.size() > 0
+        && request.resource.data.activity.size() <= 160
+        && request.resource.data.points is int
+        && request.resource.data.points > 0
+        && request.resource.data.points <= 1000
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    match /carbonActivities/{activityId} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'uid', 'activity', 'co2', 'points', 'createdAt'
+        ])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.activity is string
+        && request.resource.data.activity.size() > 0
+        && request.resource.data.activity.size() <= 160
+        && request.resource.data.co2 is number
+        && request.resource.data.co2 > 0
+        && request.resource.data.co2 <= 1000
+        && request.resource.data.points is int
+        && request.resource.data.points == 0
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    match /wasteReports/{reportId} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'uid', 'type', 'amount', 'location', 'points', 'createdAt'
+        ])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.type in [
+          'Plastic', 'Paper', 'Metal', 'Glass', 'Organic', 'E-waste'
+        ]
+        && request.resource.data.amount is number
+        && request.resource.data.amount > 0
+        && request.resource.data.amount <= 10000
+        && request.resource.data.location is string
+        && request.resource.data.location.size() <= 120
+        && request.resource.data.points == 5
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    match /badges/{badgeId} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'uid', 'badgeId', 'name', 'icon', 'unlockedAt'
+        ])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.badgeId in [
+          'first-steps', 'eco-warrior', 'carbon-cutter', 'recycler',
+          'champion', 'century', 'mega-saver'
+        ]
+        && request.resource.data.name is string
+        && request.resource.data.icon is string
+        && request.resource.data.unlockedAt == request.time;
+      allow update, delete: if false;
+    }
+
+    match /leaderboard/{userId} {
+      allow read: if signedIn();
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['displayName', 'ecoScore', 'updatedAt'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 80
+        && request.resource.data.ecoScore is int
+        && request.resource.data.ecoScore >= 0
+        && request.resource.data.updatedAt == request.time
+        && getAfter(
+          /databases/$(database)/documents/users/$(userId)
+        ).data.ecoScore == request.resource.data.ecoScore
+        && getAfter(
+          /databases/$(database)/documents/users/$(userId)
+        ).data.displayName == request.resource.data.displayName;
+      allow delete: if false;
+    }
+
+    match /events/{eventId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && validEvent(request.resource.data)
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.startsAt > request.time;
+      allow update: if signedIn()
+        && resource.data.createdBy == request.auth.uid
+        && validEvent(request.resource.data)
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.startsAt > request.time;
+      allow delete: if signedIn() && resource.data.createdBy == request.auth.uid;
+    }
+
+    match /products/{productId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && validProduct(request.resource.data, productId)
+        && request.resource.data.stock > 0
+        && request.resource.data.reservedStock == 0
+        && request.resource.data.sellerId == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+      allow update: if signedIn()
+        && resource.data.sellerId == request.auth.uid
+        && validProduct(request.resource.data, productId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['title', 'description', 'category', 'price', 'stock', 'currency', 'images'])
+        && request.resource.data.sellerId == resource.data.sellerId
+        && request.resource.data.get('reservedStock', 0)
+          == resource.data.get('reservedStock', 0)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if signedIn() && resource.data.sellerId == request.auth.uid;
+    }
+
+    match /incidentReports/{reportId} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'uid', 'type', 'location', 'description', 'status', 'createdAt'
+        ])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.type in [
+          'Illegal dumping', 'Water pollution', 'Air pollution',
+          'Wildlife concern', 'Tree or habitat damage', 'Other'
+        ]
+        && request.resource.data.location is string
+        && request.resource.data.location.size() > 0
+        && request.resource.data.location.size() <= 160
+        && request.resource.data.description is string
+        && request.resource.data.description.size() >= 10
+        && request.resource.data.description.size() <= 2000
+        && request.resource.data.status == 'open'
+        && request.resource.data.createdAt == request.time;
+      allow read: if signedIn()
+        && (resource.data.uid == request.auth.uid || isAdmin());
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'reviewedAt'])
+        && request.resource.data.status in ['open', 'in_review', 'resolved', 'rejected']
+        && request.resource.data.reviewedAt == request.time;
+      allow delete: if false;
+
+      match /evidence/{evidenceId} {
+        function reportOwner() {
+          return signedIn()
+            && get(
+              /databases/$(database)/documents/incidentReports/$(reportId)
+            ).data.uid == request.auth.uid;
+        }
+
+        allow read: if reportOwner() || isAdmin();
+        allow create: if reportOwner()
+          && request.resource.data.keys().hasOnly([
+            'name', 'storagePath', 'contentType', 'kind', 'size', 'createdAt'
+          ])
+          && request.resource.data.keys().hasAll([
+            'name', 'storagePath', 'contentType', 'kind', 'size', 'createdAt'
+          ])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 120
+          && request.resource.data.storagePath
+            == 'incidentEvidence/' + request.auth.uid + '/' + reportId + '/' + evidenceId
+          && (
+            evidenceId.matches('image-[12]')
+              && request.resource.data.kind == 'image'
+            || evidenceId == 'video-1'
+              && request.resource.data.kind == 'video'
+          )
+          && request.resource.data.contentType in [
+            'image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'
+          ]
+          && request.resource.data.kind
+            == (request.resource.data.contentType.matches('image/.*') ? 'image' : 'video')
+          && request.resource.data.size is int
+          && request.resource.data.size > 0
+          && (
+            (
+              request.resource.data.kind == 'image'
+              && request.resource.data.size <= 8 * 1024 * 1024
+            )
+            || (
+              request.resource.data.kind == 'video'
+              && request.resource.data.size <= 25 * 1024 * 1024
+            )
+          )
+          && request.resource.data.createdAt == request.time;
+        allow update: if false;
+        allow delete: if reportOwner() || isAdmin();
+      }
+    }
+
+    match /marketplaceOrders/{orderId} {
+      allow read: if signedIn()
+        && (resource.data.buyerId == request.auth.uid
+          || resource.data.sellerId == request.auth.uid
+          || isAdmin());
+      allow create, update, delete: if false;
+    }
+
+    match /organizationInquiries/{inquiryId} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'uid', 'email', 'organizationName', 'contactName',
+          'organizationType', 'interests', 'message', 'status', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'uid', 'email', 'organizationName', 'contactName',
+          'organizationType', 'interests', 'message', 'status', 'createdAt'
+        ])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.organizationName is string
+        && request.resource.data.organizationName.size() >= 2
+        && request.resource.data.organizationName.size() <= 120
+        && request.resource.data.contactName is string
+        && request.resource.data.contactName.size() >= 2
+        && request.resource.data.contactName.size() <= 80
+        && request.resource.data.organizationType in [
+          'School', 'NGO', 'Business', 'Community group', 'Other'
+        ]
+        && request.resource.data.interests is list
+        && request.resource.data.interests.size() >= 1
+        && request.resource.data.interests.size() <= 5
+        && request.resource.data.interests.toSet().size()
+          == request.resource.data.interests.size()
+        && request.resource.data.interests.hasOnly([
+          'Sustainability learning', 'Group eco-challenges',
+          'Community events', 'Environmental impact reporting', 'Other'
+        ])
+        && request.resource.data.message is string
+        && request.resource.data.message.size() >= 10
+        && request.resource.data.message.size() <= 1500
+        && request.resource.data.status == 'new'
+        && request.resource.data.createdAt == request.time;
+      allow get, list: if isAdmin();
+      allow update, delete: if false;
     }
 
     match /{document=**} {

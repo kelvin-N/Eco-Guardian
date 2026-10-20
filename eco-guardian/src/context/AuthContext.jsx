@@ -4,18 +4,22 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db, firebaseConfigurationError, isFirebaseConfigured } from "../firebase/firebaseConfig";
 import { createUserProfile } from "../services/ecoService";
-import { createUser, loginUser, logoutUser } from "../firebase/auth";
+import {
+  createUser,
+  loginUser,
+  logoutUser,
+  updateUserProfile,
+} from "../firebase/auth";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(auth));
 
   useEffect(() => {
     if (!auth) {
-      setLoading(false);
       return undefined;
     }
 
@@ -29,6 +33,10 @@ export function AuthProvider({ children }) {
         setLoading(false);
         return;
       }
+
+      createUserProfile(authenticatedUser.uid, authenticatedUser.email).catch((error) => {
+        console.error("Failed to initialize user profile:", error);
+      });
 
       const fallbackProfile = {
         uid: authenticatedUser.uid,
@@ -50,9 +58,6 @@ export function AuthProvider({ children }) {
             setUserProfile({ ...fallbackProfile, ...profileSnapshot.data() });
           } else {
             setUserProfile(fallbackProfile);
-            createUserProfile(authenticatedUser.uid, authenticatedUser.email).catch((error) => {
-              console.error("Failed to initialize user profile:", error);
-            });
           }
           setLoading(false);
         },
@@ -88,6 +93,14 @@ export function AuthProvider({ children }) {
     await logoutUser();
   };
 
+  const updateProfile = async (displayName, photoURL) => {
+    const profileChanges = {};
+    if (displayName !== undefined) profileChanges.displayName = displayName;
+    if (photoURL !== undefined) profileChanges.photoURL = photoURL;
+    if (Object.keys(profileChanges).length === 0) return;
+    await updateUserProfile(profileChanges);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -99,6 +112,7 @@ export function AuthProvider({ children }) {
         login,
         signup,
         logout,
+        updateProfile,
       }}
     >
       {children}

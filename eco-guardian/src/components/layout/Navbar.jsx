@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { motion as Motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
-import { motion } from "framer-motion";
 import Button from "../ui/Button";
 import DarkModeToggle from "./DarkModeToggle";
 
@@ -31,6 +31,7 @@ export default function Navbar() {
     { path: "/events", label: "Events", icon: "🎯" },
     { path: "/marketplace", label: "Marketplace", icon: "🛍️" },
     { path: "/education", label: "Education", icon: "📚" },
+    { path: "/organizations", label: "Organizations", icon: "🏫" },
     { path: "/leaderboard", label: "Leaderboard", icon: "🏆" },
     // add extra admin link at end if needed
     ...(isAdmin ? [{ path: "/admin/dashboard", label: "Admin", icon: "🛠️" }] : []),
@@ -88,11 +89,33 @@ export default function Navbar() {
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                 >
-                  <img
-                    src={`https://i.pravatar.cc/150?u=${currentUser.email}`}
-                    alt="avatar"
-                    className="w-8 h-8 rounded-full border-2 border-eco-500"
-                  />
+                  {userProfile && Object.prototype.hasOwnProperty.call(userProfile, "photoURL")
+                    ? userProfile.photoURL
+                      ? (
+                        <img
+                          src={userProfile.photoURL}
+                          alt=""
+                          className="h-8 w-8 rounded-full border-2 border-eco-500 object-cover"
+                        />
+                      )
+                      : (
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-eco-500 bg-eco-100 text-sm font-semibold text-eco-700 dark:bg-eco-900/40 dark:text-eco-200">
+                          {(userProfile.displayName || currentUser.email || "U").slice(0, 1).toUpperCase()}
+                        </span>
+                      )
+                    : currentUser.photoURL
+                      ? (
+                        <img
+                          src={currentUser.photoURL}
+                          alt=""
+                          className="h-8 w-8 rounded-full border-2 border-eco-500 object-cover"
+                        />
+                      )
+                      : (
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-eco-500 bg-eco-100 text-sm font-semibold text-eco-700 dark:bg-eco-900/40 dark:text-eco-200">
+                          {(userProfile?.displayName || currentUser.email || "U").slice(0, 1).toUpperCase()}
+                        </span>
+                      )}
                   <span className="hidden sm:inline text-sm font-medium text-gray-700 dark:text-gray-300">
                     {currentUser.email?.split("@")[0]}
                   </span>
@@ -100,7 +123,7 @@ export default function Navbar() {
 
                 {/* Dropdown Menu */}
                 {dropdownOpen && (
-                  <motion.div
+                  <Motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
@@ -141,7 +164,7 @@ export default function Navbar() {
                         🚪 Logout
                       </button>
                     </div>
-                  </motion.div>
+                  </Motion.div>
                 )}
               </div>
             ) : (
@@ -187,7 +210,7 @@ export default function Navbar() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && currentUser && (
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
@@ -208,7 +231,7 @@ export default function Navbar() {
                 </button>
               </Link>
             ))}
-          </motion.div>
+          </Motion.div>
         )}
       </div>
     </nav>

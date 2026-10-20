@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { motion as Motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
 import Navbar from "../../components/layout/Navbar";
 import Footer from "../../components/layout/Footer";
+import { deleteUserAvatar, uploadUserAvatar } from "../../firebase/storage";
 import {
   updateUserProfileData,
   getUserBadges,
@@ -22,6 +23,12 @@ export default function UserProfile() {
   );
   const [badges, setBadges] = useState([]);
   const [loadingBadges, setLoadingBadges] = useState(true);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [profileBusy, setProfileBusy] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [profileMessage, setProfileMessage] = useState("");
+  const [dataError, setDataError] = useState("");
+  const avatarInput = useRef(null);
   const [stats, setStats] = useState({
     ecoScore: 0,
     co2Saved: 0,
@@ -34,7 +41,10 @@ export default function UserProfile() {
     if (!currentUser) return;
     getUserBadges(currentUser.uid)
       .then((userBadges) => setBadges(userBadges))
-      .catch((err) => console.error("failed to load badges", err))
+      .catch((err) => {
+        console.error("Failed to load profile badges:", err);
+        setDataError("Some profile information could not be loaded. Please refresh and try again.");
+      })
       .finally(() => setLoadingBadges(false));
   }, [currentUser]);
 
@@ -54,24 +64,75 @@ export default function UserProfile() {
           activities: carbon.length,
         });
       })
-      .catch((err) => console.error("failed to load stats", err));
+      .catch((err) => {
+        console.error("Failed to load profile stats:", err);
+        setDataError("Some profile information could not be loaded. Please refresh and try again.");
+      });
   }, [currentUser, userProfile]);
 
   const handleSaveProfile = async () => {
     if (!currentUser) return;
-    setEditing(false);
+    setProfileBusy(true);
+    setProfileError("");
+    setProfileMessage("");
     try {
-      // update auth display name
       if (displayName && displayName !== currentUser.displayName) {
         await updateProfile(displayName);
       }
-      // update Firestore profile if needed
       await updateUserProfileData(currentUser.uid, { displayName });
-      // optional: could refresh userProfile from context by forcing reload
+      setEditing(false);
+      setProfileMessage("Profile details saved.");
     } catch (err) {
       console.error("failed to save profile", err);
+      setProfileError(err.message || "Profile details could not be saved.");
+    } finally {
+      setProfileBusy(false);
     }
   };
+
+  const handleAvatarChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !currentUser) return;
+
+    setAvatarBusy(true);
+    setProfileError("");
+    setProfileMessage("");
+    try {
+      const photoURL = await uploadUserAvatar(currentUser.uid, file);
+      await updateProfile(undefined, photoURL);
+      await updateUserProfileData(currentUser.uid, { photoURL });
+      setProfileMessage("Profile picture updated.");
+    } catch (error) {
+      console.error("Failed to update profile picture:", error);
+      setProfileError(error.message || "Profile picture could not be updated.");
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!currentUser) return;
+    setAvatarBusy(true);
+    setProfileError("");
+    setProfileMessage("");
+    try {
+      await updateProfile(undefined, null);
+      await updateUserProfileData(currentUser.uid, { photoURL: null });
+      await deleteUserAvatar(currentUser.uid);
+      setProfileMessage("Profile picture removed.");
+    } catch (error) {
+      console.error("Failed to remove profile picture:", error);
+      setProfileError(error.message || "Profile picture could not be removed.");
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const profilePhotoURL = userProfile
+    && Object.prototype.hasOwnProperty.call(userProfile, "photoURL")
+    ? userProfile.photoURL
+    : currentUser?.photoURL;
 
   return (
     <>
@@ -79,17 +140,56 @@ export default function UserProfile() {
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 py-8">
         <div className="eco-container max-w-2xl">
           {/* Header */}
-          <motion.div
+          <Motion.div
             className="mb-8"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
           >
             <div className="flex items-center gap-6 mb-6">
-              <img
-                src={`https://i.pravatar.cc/150?u=${currentUser?.email}`}
-                alt={currentUser?.email}
-                className="w-24 h-24 rounded-full border-4 border-eco-500"
-              />
+              <div className="flex shrink-0 flex-col items-center gap-2">
+                {profilePhotoURL ? (
+                  <img
+                    src={profilePhotoURL}
+                    alt={`${displayName || "User"} profile`}
+                    className="h-24 w-24 rounded-full border-4 border-eco-500 object-cover"
+                  />
+                ) : (
+                  <div
+                    className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-eco-500 bg-eco-100 text-3xl font-bold text-eco-700 dark:bg-eco-900/40 dark:text-eco-200"
+                    aria-label="No profile picture"
+                  >
+                    {(displayName || currentUser?.email || "U").slice(0, 1).toUpperCase()}
+                  </div>
+                )}
+                <input
+                  ref={avatarInput}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleAvatarChange}
+                  className="sr-only"
+                  aria-label="Choose a profile picture"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={avatarBusy}
+                  loading={avatarBusy}
+                  onClick={() => avatarInput.current?.click()}
+                >
+                  {avatarBusy ? "Uploading…" : "Change picture"}
+                </Button>
+                {profilePhotoURL && (
+                  <button
+                    type="button"
+                    disabled={avatarBusy}
+                    onClick={handleRemoveAvatar}
+                    className="text-xs text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
+                  >
+                    Remove picture
+                  </button>
+                )}
+              </div>
               <div>
                 <h1 className="eco-heading-2xl">{displayName || "User"}</h1>
                 <p className="eco-text-muted">{currentUser?.email}</p>
@@ -112,10 +212,10 @@ export default function UserProfile() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </Motion.div>
 
           {/* Quick Stats */}
-          <motion.div
+          <Motion.div
             className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -137,11 +237,17 @@ export default function UserProfile() {
               <p className="eco-text-muted text-sm">Activities</p>
               <p className="eco-heading-lg">{stats.activities}</p>
             </Card>
-          </motion.div>
+          </Motion.div>
 
           {/* Bio Section */}
           <Card className="mb-6">
             <h2 className="eco-heading-lg mb-4">Profile Information</h2>
+            {profileError && (
+              <p className="eco-alert-error mb-4" role="alert">{profileError}</p>
+            )}
+            {profileMessage && (
+              <p className="eco-alert-success mb-4" role="status">{profileMessage}</p>
+            )}
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">
@@ -180,13 +286,19 @@ export default function UserProfile() {
               <div className="flex gap-2 mt-4">
                 <Button
                   variant="primary"
+                  disabled={profileBusy}
                   onClick={handleSaveProfile}
                 >
-                  Save Changes
+                  {profileBusy ? "Saving…" : "Save Changes"}
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => setEditing(false)}
+                  disabled={profileBusy}
+                  onClick={() => {
+                    setDisplayName(currentUser?.displayName || currentUser?.email?.split("@")[0] || "");
+                    setEditing(false);
+                    setProfileError("");
+                  }}
                 >
                   Cancel
                 </Button>
@@ -205,6 +317,9 @@ export default function UserProfile() {
           {/* Achievements */}
           <Card className="mb-6">
             <h2 className="eco-heading-lg mb-4">🏆 Earned Badges</h2>
+            {dataError && (
+              <p className="eco-alert-error mb-4" role="alert">{dataError}</p>
+            )}
             {loadingBadges ? (
               <div className="flex justify-center py-10">
                 <Loader size="md" />
@@ -216,7 +331,7 @@ export default function UserProfile() {
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {badges.map((badge) => (
-                  <motion.div
+                  <Motion.div
                     key={badge.id}
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -227,7 +342,7 @@ export default function UserProfile() {
                     <p className="text-xs eco-text-muted mt-1">
                       {badge.unlockedAt?.toDate?.()?.toLocaleDateString?.() || "Earned"}
                     </p>
-                  </motion.div>
+                  </Motion.div>
                 ))}
               </div>
             )}

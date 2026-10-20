@@ -3,6 +3,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getFunctions } from "firebase/functions";
 import { getStorage } from "firebase/storage";
 
 // Firebase configuration from environment variables.
@@ -55,3 +56,6 @@ export { firebaseConfigurationError };
 export const auth = app ? getAuth(app) : null;
 export const db = app ? getFirestore(app) : null;
 export const storage = app ? getStorage(app) : null;
+export const functions = app
+  ? getFunctions(app, import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || "us-central1")
+  : null;

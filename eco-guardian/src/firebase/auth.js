@@ -141,15 +141,11 @@ export const logoutUser = async () => {
 /**
  * Update user profile
  */
-export const updateUserProfile = async (displayName, photoURL) => {
+export const updateUserProfile = async (profileChanges) => {
   if (!auth) throw new Error(firebaseConfigurationError);
+  if (!auth.currentUser) throw new Error("Sign in before updating your profile.");
   try {
-    if (auth.currentUser) {
-      await updateProfile(auth.currentUser, {
-        displayName,
-        photoURL,
-      });
-    }
+    await updateProfile(auth.currentUser, profileChanges);
   } catch (error) {
     const formattedError = formatFirebaseError(error, "Update Profile");
     console.error(formattedError);

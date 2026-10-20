@@ -102,22 +102,115 @@ it's useful to know what they are:
 - `carbonActivities` – carbon-specific entries with a `co2` value.
 - `wasteReports` – logged recycling/clean-up events with `type`, `amount`,
   and `location`.
+- `badges` – earned achievement records.
+- `leaderboard` – public display names and scores only; it does not expose
+  users' email addresses or profile documents.
+- `events` – community-created events and their organizer.
+- `products` – community marketplace listings with GHS prices and reserved
+  inventory.
+- `marketplaceOrders` – server-created orders; buyers, sellers, and
+  administrators can read relevant orders, but only trusted Cloud Functions
+  can update payment status.
+- `organizationInquiries` – signed-in organization pilot inquiries, readable
+  only by administrators.
+- `incidentReports` – user-submitted reports; users can read their own, and
+  administrators can review and update their status.
+- `users/{uid}/eventRsvps` and `users/{uid}/cart` – private per-user RSVPs
+  and saved cart items.
+- `users/{uid}/learningProgress` – the user's quiz attempts, best score, and
+  completed lesson markers for the Education Hub. Lesson content is bundled
+  with the app; learning progress is private to the signed-in user. Quiz scores
+  track learning only and do not award ecoScore points.
 
 Do not copy permissive rules from tutorials into production. Rules must match
 the application's actual reads and writes, validate collection fields, prevent
-users from changing their own role or score, and restrict personal data to
-authorized readers. The starter rules are in `firestore.rules`. Review them,
-then copy their contents into the Firestore **Rules** editor and use **Test**
-to confirm that a signed-in user can create and read their own profile, cannot
-read another user's profile, and cannot change a score or role. Deploy only
-after those checks pass.
+users from changing their own role or directly editing their score, and keep
+email addresses private. The reviewed starter rules are in `firestore.rules`; required query indexes are
+in `firestore.indexes.json`. `firebase.json` points Firebase CLI deployments
+at both files.
 
-These rules intentionally deny client access to all collections other than
-user profiles. Activity logging, badges, score updates, and the leaderboard
-will remain unavailable until those features use a trusted backend and have
-their own reviewed rules. Grant the first admin through the trusted Firebase
-Console; only an existing admin can change roles through the protected admin
-dashboard. Storage has separate rules and is not configured by this file.
+To deploy the Firestore rules and indexes, install and authenticate with the Firebase CLI,
+then run this from the `eco-guardian` directory, replacing the project ID:
+
+```bash
+firebase login
+firebase deploy --only firestore --project YOUR_FIREBASE_PROJECT_ID
+```
+
+The rules allow signed-in users to read and create their own activity records,
+and only allow score increases in the same atomic write as a valid,
+points-bearing activity. The global leaderboard reads a separate projection
+containing display names and scores, not private user profiles. Event listings
+and product listings are shared with signed-in users; users can only edit their
+own listings, RSVP records, and cart. Marketplace payment status is written
+only by trusted Cloud Functions after Paystack verification.
+
+### Marketplace checkout (Ghana Mobile Money)
+
+Checkout uses Paystack's Ghana Mobile Money channel and charges in GHS. The
+Paystack secret key is used only by Firebase Cloud Functions, never by the
+browser. Buyers check out one seller at a time; payment goes to the marketplace
+account, and seller payouts are handled separately by marketplace
+administrators. Legacy listings labeled USD must be repriced by their owners
+in GHS before they can be purchased.
+
+1. Create/activate a Paystack merchant account registered in Ghana and enable
+   Mobile Money, including MTN MoMo, in the Paystack dashboard.
+2. Ensure the Firebase project is on the Blaze plan and Firebase CLI is
+   authenticated to the same project. Cloud Functions and scheduled inventory
+   release require billing to be enabled.
+3. Set the Paystack secret (start with a test key):
+
+   ```bash
+   firebase functions:secrets:set PAYSTACK_SECRET_KEY --project YOUR_FIREBASE_PROJECT_ID
+   ```
+
+4. Create `functions/.env.YOUR_FIREBASE_PROJECT_ID` with the URL where the
+   deployed marketplace returns buyers after payment:
+
+   ```env
+   MARKETPLACE_RETURN_URL=https://your-site.example/marketplace
+   ```
+
+   Use the actual HTTPS deployment URL. Do not commit this file or put the
+   Paystack secret in it.
+5. Deploy Firestore rules/indexes and the functions:
+
+   ```bash
+   firebase deploy --only firestore,functions --project YOUR_FIREBASE_PROJECT_ID
+   ```
+
+6. In Paystack Dashboard → Settings → API Keys & Webhooks, configure the
+   webhook URL shown for the deployed `paystackWebhook` function, typically:
+
+   ```text
+   https://us-central1-YOUR_FIREBASE_PROJECT_ID.cloudfunctions.net/paystackWebhook
+   ```
+
+   Use the same test/live mode as the configured secret. Test a successful
+   MTN MoMo payment, a canceled/failed payment, webhook retries, stock
+   restoration after an expired checkout, and late payment after expiry (the
+   latter is marked for manual refund review, not fulfilled).
+
+Orders reserve available stock for 30 minutes while payment is pending. A
+scheduled function releases expired reservations. After payment, the verified
+webhook marks the order paid and removes purchased quantities from the buyer's
+cart. A late successful payment is flagged `refund_required`.
+
+Before production, test the rules in the Firebase Emulator Suite or Rules
+Playground: verify that users cannot read another user's activity, cart, RSVP,
+or profile; cannot directly change a score or role; and cannot modify another
+user's event or product listing. Grant the first admin through the trusted
+Firebase Console; only an existing admin can change roles through the protected
+admin dashboard. Profile images are stored under the owning user's
+`avatars/{uid}/profile` path. Storage access is restricted by `storage.rules`;
+only the signed-in owner can read, replace, or delete their JPEG, PNG, or WebP
+image, up to 5 MB. Incident evidence is stored separately under
+`incidentEvidence/{uid}/{reportId}/{evidenceId}`. Only the reporter and
+administrators can read it; the reporter can remove their evidence. Images are
+limited to 8 MB each (up to two), videos to 25 MB (one per report), with at
+most three files total. Evidence is not publicly listed, and download URLs are
+not saved in Firestore.
 
 ### Step 8: Set Up Firebase Storage (for file uploads)
 1. In Firebase Console, go to **Build** → **Storage**
@@ -125,8 +218,48 @@ dashboard. Storage has separate rules and is not configured by this file.
 3. Use **Production mode** for a production project
 4. Click "Create"
 
-Deploy Storage rules that restrict uploads and reads to the authenticated
-owner. Do not use test rules on a production bucket.
+`firebase.json` configures Firebase CLI to deploy the restrictive rules in
+`storage.rules`. Deploy them along with Firestore rules before using profile
+picture uploads, marketplace product images, or incident evidence:
+
+```bash
+firebase deploy --only firestore,storage --project YOUR_FIREBASE_PROJECT_ID
+```
+
+Do not use test rules on a production bucket.
+
+Marketplace sellers can attach up to five JPEG, PNG, or WebP product images.
+The app resizes images to at most 1,600 pixels per side and 2 MB before upload.
+Only signed-in marketplace members can view them, and only the listing owner
+can upload images to that listing. Product share links take recipients to the
+listing after they sign in.
+
+The `/organizations` page requires sign-in. Inquiries include the signed-in
+user's email, organization details, requested pilot areas, and message. The
+Firestore rules allow only the submitting user to create an inquiry and only
+administrators to read them; inquiry records cannot be edited by clients.
+Deploy the updated Firestore rules before accepting inquiries:
+
+```bash
+firebase deploy --only firestore --project YOUR_FIREBASE_PROJECT_ID
+```
+
+Incident evidence previews download files directly through the authenticated
+Firebase Storage SDK so Storage Rules remain enforced; this requires a bucket
+CORS policy. The included `storage.cors.json` allows browser GET requests from
+any origin but does not grant data access—Firebase Storage Rules still control
+who can read files. Apply it using Google Cloud CLI/gsutil after replacing the
+bucket name with the value of `VITE_FIREBASE_STORAGE_BUCKET`:
+
+```bash
+gsutil cors set storage.cors.json gs://YOUR_FIREBASE_STORAGE_BUCKET
+```
+
+The report form accepts JPEG, PNG, WebP, MP4, and WebM. Evidence is optional.
+If media upload fails after the report text is saved, the app reports that
+partial result explicitly; the text report remains available in My Reports.
+Image/video metadata is not stripped automatically, so submitters should check
+files for embedded location or device details before attaching them.
 
 ### Step 9: Restart Development Server
 ```bash

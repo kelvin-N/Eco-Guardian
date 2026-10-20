@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
-import { motion, AnimatePresence } from "framer-motion";
-import { db } from "../../firebase/firebaseConfig";
+import { motion as Motion, AnimatePresence } from "framer-motion";
+import { db, firebaseConfigurationError } from "../../firebase/firebaseConfig";
 import { useAuth } from "../../context/AuthContext";
 import Card from "../../components/ui/Card";
-import Button from "../../components/ui/Button";
 
 const getMedalEmoji = (rank) => {
   switch (rank) {
@@ -21,17 +20,17 @@ const getMedalEmoji = (rank) => {
 
 export default function Leaderboard() {
   const [users, setUsers] = useState([]);
-  const [error, setError] = useState("");
-  const [view, setView] = useState("global");
+  const [error, setError] = useState(
+    db ? "" : firebaseConfigurationError || "Leaderboard requires Firebase configuration."
+  );
+  const [loading, setLoading] = useState(Boolean(db));
   const [searchTerm, setSearchTerm] = useState("");
   const { currentUser, userProfile } = useAuth();
 
   useEffect(() => {
     if (!db) return;
 
-    if (userProfile?.role !== "admin") return;
-
-    const q = query(collection(db, "users"), orderBy("ecoScore", "desc"));
+    const q = query(collection(db, "leaderboard"), orderBy("ecoScore", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -39,22 +38,18 @@ export default function Leaderboard() {
       }));
       setUsers(data);
       setError("");
+      setLoading(false);
     }, (loadError) => {
       console.error("Failed to load leaderboard:", loadError);
       setError("Unable to load the leaderboard right now.");
+      setLoading(false);
     });
     return () => unsubscribe();
-  }, [userProfile?.role]);
+  }, []);
 
-  const displayedUsers =
-    view === "friends" && currentUser
-      ? users.filter((u) => currentUser.friends?.includes(u.id))
-      : users;
-
-  const filteredUsers = displayedUsers.filter(
+  const filteredUsers = users.filter(
     (user) =>
-      user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+      user.displayName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getRank = () => {
@@ -83,34 +78,11 @@ export default function Leaderboard() {
           <h2 className="eco-heading-md">Global Leaderboard</h2>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => setView("global")}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              view === "global"
-                ? "bg-eco-500 text-white"
-                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-            }`}
-          >
-            🌍 Global
-          </button>
-          <button
-            onClick={() => setView("friends")}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              view === "friends"
-                ? "bg-eco-500 text-white"
-                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-            }`}
-          >
-            👥 Friends
-          </button>
-        </div>
       </div>
 
       {/* Your Rank Card */}
       {currentUser && (
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 p-4 bg-gradient-to-r from-eco-100 to-blue-100 dark:from-eco-900/30 dark:to-blue-900/30 rounded-xl border-l-4 border-eco-500"
@@ -135,14 +107,14 @@ export default function Leaderboard() {
               </p>
             </div>
           </div>
-        </motion.div>
+        </Motion.div>
       )}
 
       {/* Search */}
       <div className="mb-6">
         <input
           type="text"
-          placeholder="🔍 Search by name or email..."
+          placeholder="🔍 Search by display name..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="eco-input w-full"
@@ -150,15 +122,15 @@ export default function Leaderboard() {
       </div>
 
       {/* Leaderboard List */}
-      <motion.div layout className="space-y-2">
+      <Motion.div layout className="space-y-2">
         <AnimatePresence>
-          {userProfile?.role !== "admin" ? (
-            <p role="status" className="eco-text-muted text-center py-8">
-              The leaderboard is unavailable until public leaderboard access is configured.
-            </p>
-          ) : error ? (
+          {error ? (
             <p role="status" className="eco-text-muted text-center py-8">
               {error}
+            </p>
+          ) : loading ? (
+            <p role="status" className="eco-text-muted text-center py-8">
+              Loading leaderboard...
             </p>
           ) : filteredUsers.length > 0 ? (
             filteredUsers.map((user) => {
@@ -166,7 +138,7 @@ export default function Leaderboard() {
               const isCurrentUser = user.id === currentUser?.uid;
 
               return (
-                <motion.div
+                <Motion.div
                   key={user.id}
                   layout
                   initial={{ opacity: 0, x: -20 }}
@@ -185,38 +157,22 @@ export default function Leaderboard() {
                       <span className="text-lg">{getMedalEmoji(actualRank)}</span>
                     </div>
 
-                    <img
-                      src={
-                        user.photoURL ||
-                        `https://i.pravatar.cc/150?u=${user.email}`
-                      }
-                      alt={user.displayName}
-                      className="w-10 h-10 rounded-full border-2 border-eco-500"
-                    />
+                    <div
+                      aria-hidden="true"
+                      className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-eco-500 bg-eco-100 font-semibold text-eco-700 dark:bg-eco-900/30 dark:text-eco-300"
+                    >
+                      {(user.displayName || "EG").slice(0, 2).toUpperCase()}
+                    </div>
 
                     <div className="flex-1">
                       <p className="font-semibold text-gray-900 dark:text-white">
-                        {user.displayName || user.email?.split("@")[0]}
-                      </p>
-                      <p className="text-xs eco-text-subtle">
-                        {user.email && `@${user.email.split("@")[1]}`}
+                        {user.displayName || "Eco Guardian"}
                       </p>
                     </div>
-
-                    {/* Badges */}
-                    {user.badges && user.badges.length > 0 && (
-                      <div className="flex gap-1">
-                        {user.badges.slice(0, 3).map((badge, i) => (
-                          <span key={i} className="text-lg" title={badge}>
-                            🏅
-                          </span>
-                        ))}
-                      </div>
-                    )}
                   </div>
 
                   {/* Score */}
-                  <motion.div
+                  <Motion.div
                     className={`text-right ${
                       isCurrentUser ? "pr-2" : ""
                     }`}
@@ -230,7 +186,7 @@ export default function Leaderboard() {
                       {user.ecoScore}
                     </p>
                     <p className="text-xs eco-text-subtle">points</p>
-                  </motion.div>
+                  </Motion.div>
 
                   {/* Actions */}
                   {isCurrentUser && (
@@ -238,7 +194,7 @@ export default function Leaderboard() {
                       <span className="eco-badge-success text-xs">YOU</span>
                     </div>
                   )}
-                </motion.div>
+                </Motion.div>
               );
             })
           ) : (
@@ -248,7 +204,7 @@ export default function Leaderboard() {
             </div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </Motion.div>
 
       {/* Footer Info */}
       <div className="mt-6 eco-divider"></div>

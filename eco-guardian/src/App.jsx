@@ -1,6 +1,7 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
-import { motion, AnimatePresence } from "framer-motion";
+import { ThemeProvider } from "./context/ThemeContext";
+import { motion as Motion, AnimatePresence } from "framer-motion";
 import Login from "./features/auth/Login";
 import SignUp from "./features/auth/SignUp";
 import Dashboard from "./features/dashboard/Dashboard";
@@ -17,6 +18,9 @@ import CommunityLeaderboard from "./features/community/CommunityLeaderboard";
 import EnvironmentalAnalytics from "./features/analytics/EnvironmentalAnalytics";
 import UserProfile from "./features/profile/UserProfile";
 import Settings from "./features/profile/Settings";
+import ReportIncident from "./features/reporting/ReportIncident";
+import ReportsList from "./features/reporting/ReportsList";
+import Organizations from "./features/organizations/Organizations";
 import { useAuth } from "./context/AuthContext";
 
 // -------------------------------
@@ -24,6 +28,7 @@ import { useAuth } from "./context/AuthContext";
 // -------------------------------
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -39,7 +44,13 @@ function ProtectedRoute({ children }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return (
+      <Navigate
+        to="/login"
+        state={{ from: `${location.pathname}${location.search}${location.hash}` }}
+        replace
+      />
+    );
   }
 
   return children;
@@ -50,16 +61,17 @@ function ProtectedRoute({ children }) {
 // -------------------------------
 export default function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <AnimatePresence mode="wait">
-          <Routes>
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <AnimatePresence mode="wait">
+            <Routes>
 
             {/* AUTH */}
             <Route
               path="/login"
               element={
-                <motion.div
+                <Motion.div
                   key="login"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -67,14 +79,14 @@ export default function App() {
                   transition={{ duration: 0.3 }}
                 >
                   <Login />
-                </motion.div>
+                </Motion.div>
               }
             />
 
             <Route
               path="/signup"
               element={
-                <motion.div
+                <Motion.div
                   key="signup"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -82,7 +94,7 @@ export default function App() {
                   transition={{ duration: 0.3 }}
                 >
                   <SignUp />
-                </motion.div>
+                </Motion.div>
               }
             />
 
@@ -119,6 +131,15 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <EducationHub />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/organizations"
+              element={
+                <ProtectedRoute>
+                  <Organizations />
                 </ProtectedRoute>
               }
             />
@@ -186,6 +207,24 @@ export default function App() {
               }
             />
 
+            <Route
+              path="/report-incident"
+              element={
+                <ProtectedRoute>
+                  <ReportIncident />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute>
+                  <ReportsList />
+                </ProtectedRoute>
+              }
+            />
+
             {/* ADMIN */}
             <Route
               path="/admin/dashboard"
@@ -198,15 +237,27 @@ export default function App() {
               }
             />
 
+            <Route
+              path="/admin/reports"
+              element={
+                <ProtectedRoute>
+                  <AdminRoute>
+                    <ReportsList adminView />
+                  </AdminRoute>
+                </ProtectedRoute>
+              }
+            />
+
             {/* ACCESS DENIED */}
             <Route path="/access-denied" element={<AccessDenied />} />
 
             {/* DEFAULT */}
             <Route path="*" element={<Navigate to="/login" />} />
 
-          </Routes>
-        </AnimatePresence>
-      </Router>
-    </AuthProvider>
+            </Routes>
+          </AnimatePresence>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

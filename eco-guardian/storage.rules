@@ -1,0 +1,94 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && firestore.get(
+          /databases/(default)/documents/users/$(request.auth.uid)
+        ).data.role == 'admin';
+    }
+
+    function isReportOwner(userId, reportId) {
+      return signedIn()
+        && firestore.get(
+          /databases/(default)/documents/incidentReports/$(reportId)
+        ).data.uid == userId;
+    }
+
+    match /avatars/{userId}/profile {
+      allow read: if signedIn()
+        && request.auth.uid == userId;
+      allow create, update: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.size > 0
+        && request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+      allow delete: if signedIn()
+        && request.auth.uid == userId;
+    }
+
+    match /products/{sellerId}/{productId}/{imageName} {
+      function ownsProduct() {
+        return signedIn()
+          && request.auth.uid == sellerId
+          && firestore.get(
+            /databases/(default)/documents/products/$(productId)
+          ).data.sellerId == sellerId;
+      }
+
+      allow read: if signedIn()
+        && firestore.exists(
+          /databases/(default)/documents/products/$(productId)
+        );
+      allow create: if ownsProduct()
+        && imageName.matches('image-[1-5]')
+        && request.resource.size > 0
+        && request.resource.size <= 2 * 1024 * 1024
+        && request.resource.contentType == 'image/jpeg';
+      allow update: if false;
+      allow delete: if signedIn()
+        && request.auth.uid == sellerId
+        && imageName.matches('image-[1-5]')
+        && (
+          !firestore.exists(
+            /databases/(default)/documents/products/$(productId)
+          )
+          || firestore.get(
+            /databases/(default)/documents/products/$(productId)
+          ).data.sellerId == sellerId
+        );
+    }
+
+    match /incidentEvidence/{userId}/{reportId}/{evidenceId} {
+      allow read: if isReportOwner(userId, reportId)
+        && (request.auth.uid == userId || isAdmin());
+      allow create: if isReportOwner(userId, reportId)
+        && request.auth.uid == userId
+        && request.resource.size > 0
+        && (
+          (
+            evidenceId.matches('image-[12]')
+            && request.resource.contentType.matches('image/(jpeg|png|webp)')
+            && request.resource.size <= 8 * 1024 * 1024
+          )
+          || (
+            evidenceId == 'video-1'
+            && request.resource.contentType.matches('video/(mp4|webm)')
+            && request.resource.size <= 25 * 1024 * 1024
+          )
+        );
+      allow update: if false;
+      allow delete: if isReportOwner(userId, reportId)
+        && request.auth.uid == userId;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

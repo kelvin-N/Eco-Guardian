@@ -1,36 +1,28 @@
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function DarkModeToggle() {
-  const [dark, setDark] = useState(localStorage.theme === "dark");
-
-  useEffect(() => {
-    if (dark) {
-      document.documentElement.classList.add("dark");
-      localStorage.theme = "dark";
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.theme = "light";
-    }
-  }, [dark]);
+  const { isDark, toggleTheme } = useTheme();
 
   return (
     <motion.button
-      onClick={() => setDark(!dark)}
+      type="button"
+      onClick={toggleTheme}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}
       className="p-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
       aria-label="Toggle dark mode"
+      aria-pressed={isDark}
     >
       <motion.span
-        key={dark ? "dark" : "light"}
+        key={isDark ? "dark" : "light"}
         initial={{ rotate: -180, opacity: 0 }}
         animate={{ rotate: 0, opacity: 1 }}
         exit={{ rotate: 180, opacity: 0 }}
         transition={{ duration: 0.3 }}
         className="inline-block text-lg"
       >
-        {dark ? "☀️" : "🌙"}
+        {isDark ? "☀️" : "🌙"}
       </motion.span>
     </motion.button>
   );

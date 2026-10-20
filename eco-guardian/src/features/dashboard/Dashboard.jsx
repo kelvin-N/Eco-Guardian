@@ -2,128 +2,98 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { db } from "../../firebase/firebaseConfig";
 import { useAuth } from "../../context/AuthContext";
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import Navbar from "../../components/layout/Navbar";
 import Footer from "../../components/layout/Footer";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import CO2Chart from "../../components/charts/CO2Chart";
 import Leaderboard from "../leaderboard/Leaderboard";
-import { getCarbonActivities } from "../../services/ecoService";
+import {
+  BADGE_DEFINITIONS,
+  getCarbonActivities,
+  getUserBadges,
+  getWasteReports,
+} from "../../services/ecoService";
+import MonthlyGoalsProgress from "../goals/MonthlyGoalsProgress";
 
-// Activity Log Component
-function ActivityLog() {
-  const activities = [
-    { icon: "🚴", action: "Took a bike ride", time: "2 hours ago" },
-    { icon: "♻️", action: "Recycled plastic", time: "4 hours ago" },
-    { icon: "🌱", action: "Planted a tree", time: "1 day ago" },
-  ];
+function toDate(timestamp) {
+  if (timestamp?.toDate) return timestamp.toDate();
+  if (timestamp instanceof Date) return timestamp;
+  return timestamp ? new Date(timestamp) : null;
+}
 
+function ActivityLog({ activities, loading, error }) {
   return (
     <Card elevated>
       <div className="flex items-center gap-3 mb-4">
         <span className="text-2xl">📋</span>
         <h3 className="eco-heading-sm">Recent Activity</h3>
       </div>
-      <div className="space-y-3">
-        {activities.map((activity, i) => (
-          <motion.div
-            key={i}
+      {loading ? (
+        <p className="eco-text-muted" role="status">Loading your activity...</p>
+      ) : error ? (
+        <p className="text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>
+      ) : activities.length === 0 ? (
+        <p className="eco-text-muted">Your logged carbon and waste activities will appear here.</p>
+      ) : (
+        <div className="space-y-3">
+        {activities.slice(0, 5).map((activity, i) => (
+          <Motion.div
+            key={activity.id}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.1 }}
             className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition"
           >
             <div className="flex items-center gap-3">
-              <span className="text-2xl">{activity.icon}</span>
+              <span className="text-2xl" aria-hidden="true">{activity.icon}</span>
               <div>
                 <p className="text-sm font-medium">{activity.action}</p>
-                <p className="text-xs eco-text-subtle">{activity.time}</p>
+                <p className="text-xs eco-text-subtle">
+                  {toDate(activity.createdAt)?.toLocaleString() || "Date unavailable"}
+                </p>
               </div>
             </div>
-            <span className="text-xl">+10 pts</span>
-          </motion.div>
+            <span className="text-sm font-medium">+{activity.points} pts</span>
+          </Motion.div>
         ))}
-      </div>
+        </div>
+      )}
     </Card>
   );
 }
 
-// Achievements Component
-function Achievements() {
-  const achievements = [
-    { icon: "🥇", title: "First Steps", desc: "Complete your first eco-action" },
-    { icon: "🌟", title: "Eco-Star", desc: "Reach 100 eco-points" },
-    { icon: "🔥", title: "On Fire", desc: "7-day streak" },
-    { icon: "👑", title: "Legend", desc: "Reach #1 on leaderboard" },
-  ];
-
+function Achievements({ achievements, loading, error }) {
   return (
     <Card elevated>
       <div className="flex items-center gap-3 mb-4">
         <span className="text-2xl">🏅</span>
         <h3 className="eco-heading-sm">Achievements</h3>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        {achievements.map((ach, i) => (
-          <motion.div
-            key={i}
+      {loading ? (
+        <p className="eco-text-muted" role="status">Loading your achievements...</p>
+      ) : error ? (
+        <p className="text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>
+      ) : achievements.length === 0 ? (
+        <p className="eco-text-muted">No achievements unlocked yet. Keep logging eco activities!</p>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+        {achievements.map((achievement, i) => (
+          <Motion.div
+            key={achievement.id}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
             className="p-3 bg-gradient-to-br from-eco-50 to-blue-50 dark:from-eco-900/20 dark:to-blue-900/20 rounded-lg text-center hover:shadow-md transition cursor-pointer"
           >
-            <div className="text-3xl mb-2">{ach.icon}</div>
-            <p className="text-xs font-semibold">{ach.title}</p>
-            <p className="text-xs eco-text-subtle">{ach.desc}</p>
-          </motion.div>
+            <div className="text-3xl mb-2">{achievement.icon}</div>
+            <p className="text-xs font-semibold">{achievement.name}</p>
+            <p className="text-xs eco-text-subtle">{achievement.description}</p>
+          </Motion.div>
         ))}
-      </div>
-    </Card>
-  );
-}
-
-// Goal Progress Component
-function GoalProgress() {
-  const goals = [
-    { label: "Carbon Offset", current: 45, target: 100, icon: "💨" },
-    { label: "Waste Reduced", current: 12, target: 50, icon: "♻️" },
-    { label: "Trees Planted", current: 8, target: 25, icon: "🌱" },
-  ];
-
-  return (
-    <Card elevated>
-      <div className="flex items-center gap-3 mb-4">
-        <span className="text-2xl">🎯</span>
-        <h3 className="eco-heading-sm">Goals Progress</h3>
-      </div>
-      <div className="space-y-4">
-        {goals.map((goal, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: i * 0.1 }}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="flex items-center gap-2 text-sm font-medium">
-                {goal.icon} {goal.label}
-              </span>
-              <span className="eco-badge-success">
-                {goal.current}/{goal.target}
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <motion.div
-                className="bg-gradient-to-r from-eco-400 to-eco-600 h-2 rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${(goal.current / goal.target) * 100}%` }}
-                transition={{ duration: 1, ease: "easeOut" }}
-              ></motion.div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+        </div>
+      )}
     </Card>
   );
 }
@@ -131,18 +101,70 @@ function GoalProgress() {
 // Dashboard Main Component
 export default function Dashboard() {
   const { currentUser, userProfile } = useAuth();
+  const userId = currentUser?.uid;
   const navigate = useNavigate();
   const [carbonActivities, setCarbonActivities] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [achievements, setAchievements] = useState([]);
+  const [loadedUserId, setLoadedUserId] = useState(null);
+  const [activityLoadError, setActivityLoadError] = useState(null);
+  const activityLoading = Boolean(db && userId && loadedUserId !== userId);
+  const activityError =
+    activityLoadError?.userId === userId ? activityLoadError.message : "";
 
-  // Load carbon activities for chart
   useEffect(() => {
-    if (!currentUser) return;
-    if (!db) return;
+    if (!userId || !db) return;
 
-    getCarbonActivities(currentUser.uid)
-      .then((acts) => setCarbonActivities(acts))
-      .catch((err) => console.error("failed to load activities", err));
-  }, [currentUser]);
+    let cancelled = false;
+    Promise.all([
+      getCarbonActivities(userId),
+      getWasteReports(userId),
+      getUserBadges(userId),
+    ])
+      .then(([carbon, waste, badges]) => {
+        if (cancelled) return;
+        setCarbonActivities(carbon);
+        const activities = [
+          ...carbon.map((record) => ({
+            id: `carbon-${record.id}`,
+            icon: "🌱",
+            action: record.activity,
+            points: record.points || 0,
+            createdAt: record.createdAt,
+          })),
+          ...waste.map((record) => ({
+            id: `waste-${record.id}`,
+            icon: "♻️",
+            action: `${record.type} waste reported`,
+            points: 5,
+            createdAt: record.createdAt,
+          })),
+        ].sort((a, b) => (toDate(b.createdAt)?.getTime() || 0) - (toDate(a.createdAt)?.getTime() || 0));
+        setRecentActivities(activities);
+        setAchievements(
+          badges
+            .map((badge) => BADGE_DEFINITIONS[badge.badgeId])
+            .filter(Boolean)
+        );
+        setActivityLoadError(null);
+        setLoadedUserId(userId);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error("Failed to load dashboard activity:", error);
+        setActivityLoadError({
+          userId,
+          message: "Dashboard activity could not be loaded. Please try again later.",
+        });
+      })
+      .finally(() => {
+        if (!cancelled) setLoadedUserId(userId);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   if (!currentUser) {
     return (
@@ -172,6 +194,44 @@ export default function Dashboard() {
     },
   };
 
+  const now = new Date();
+  const weekAgo = new Date(now);
+  weekAgo.setDate(now.getDate() - 7);
+  const actionsThisWeek = recentActivities.filter((activity) => {
+    const date = toDate(activity.createdAt);
+    return date && date >= weekAgo && date <= now;
+  }).length;
+  const totalCO2Saved = carbonActivities.reduce(
+    (sum, activity) => sum + (Number(activity.co2) || 0),
+    0
+  );
+  const activeDays = new Set(
+    recentActivities
+      .map((activity) => toDate(activity.createdAt))
+      .filter(Boolean)
+      .map((date) => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`)
+  );
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  let streak = 0;
+  const latestActivity = [...recentActivities]
+    .map((activity) => toDate(activity.createdAt))
+    .filter(Boolean)
+    .sort((a, b) => b - a)[0];
+  if (
+    latestActivity &&
+    latestActivity >= yesterday &&
+    latestActivity < new Date(today.getTime() + 24 * 60 * 60 * 1000)
+  ) {
+    const day = new Date(today);
+    if (latestActivity < today) day.setDate(day.getDate() - 1);
+    while (activeDays.has(`${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`)) {
+      streak += 1;
+      day.setDate(day.getDate() - 1);
+    }
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -180,7 +240,7 @@ export default function Dashboard() {
       <main className="flex-1 bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 py-12">
         <div className="eco-container">
           {/* Welcome Section */}
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-12"
@@ -194,32 +254,28 @@ export default function Dashboard() {
                   You're making a difference every day. Keep up the amazing work!
                 </p>
               </div>
-              <Button variant="secondary" onClick={() => navigate("/carbon")}>
-                + Log Activity
-              </Button>
+              <div className="flex flex-wrap gap-3">
+                <Button variant="secondary" onClick={() => navigate("/carbon")}>
+                  + Log Activity
+                </Button>
+                <Button variant="outline" onClick={() => navigate("/report-incident")}>
+                  Report Incident
+                </Button>
+                <Button variant="outline" onClick={() => navigate("/reports")}>
+                  My Reports
+                </Button>
+              </div>
             </div>
-          </motion.div>
+          </Motion.div>
 
           {/* Stats Cards */}
-          <motion.div
+          <Motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
             className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
           >
-            <motion.div variants={itemVariants}>
-              <Card elevated>
-                <div className="text-center">
-                  <div className="text-5xl mb-2">🏆</div>
-                  <p className="eco-text-subtle mb-1">Your Rank</p>
-                  <p className="eco-heading-lg text-eco-600 dark:text-eco-400">
-                    Not available
-                  </p>
-                </div>
-              </Card>
-            </motion.div>
-
-            <motion.div variants={itemVariants}>
+            <Motion.div variants={itemVariants}>
               <Card elevated>
                 <div className="text-center">
                   <div className="text-5xl mb-2">🌟</div>
@@ -229,63 +285,86 @@ export default function Dashboard() {
                   </p>
                 </div>
               </Card>
-            </motion.div>
+            </Motion.div>
 
-            <motion.div variants={itemVariants}>
+            <Motion.div variants={itemVariants}>
+              <Card elevated>
+                <div className="text-center">
+                  <div className="text-5xl mb-2">🌍</div>
+                  <p className="eco-text-subtle mb-1">Estimated CO₂ savings</p>
+                  <p className="eco-heading-lg text-orange-600 dark:text-orange-400">
+                    {totalCO2Saved.toFixed(1)} kg
+                  </p>
+                </div>
+              </Card>
+            </Motion.div>
+
+            <Motion.div variants={itemVariants}>
+              <Card elevated>
+                <div className="text-center">
+                  <div className="text-5xl mb-2">📊</div>
+                  <p className="eco-text-subtle mb-1">Actions (7 days)</p>
+                  <p className="eco-heading-lg text-blue-600 dark:text-blue-400">
+                    {actionsThisWeek}
+                  </p>
+                </div>
+              </Card>
+            </Motion.div>
+            <Motion.div variants={itemVariants}>
               <Card elevated>
                 <div className="text-center">
                   <div className="text-5xl mb-2">🔥</div>
                   <p className="eco-text-subtle mb-1">Current Streak</p>
                   <p className="eco-heading-lg text-orange-600 dark:text-orange-400">
-                    7 days
+                    {streak} {streak === 1 ? "day" : "days"}
                   </p>
                 </div>
               </Card>
-            </motion.div>
-
-            <motion.div variants={itemVariants}>
-              <Card elevated>
-                <div className="text-center">
-                  <div className="text-5xl mb-2">📊</div>
-                  <p className="eco-text-subtle mb-1">Actions This Week</p>
-                  <p className="eco-heading-lg text-blue-600 dark:text-blue-400">
-                    5
-                  </p>
-                </div>
-              </Card>
-            </motion.div>
-          </motion.div>
+            </Motion.div>
+          </Motion.div>
 
           {/* Main Content Grid */}
-          <motion.div
+          <Motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
             className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8"
           >
             {/* Left Column */}
-            <motion.div variants={itemVariants} className="lg:col-span-2 space-y-6">
+            <Motion.div variants={itemVariants} className="lg:col-span-2 space-y-6">
               {/* CO2 Chart */}
               {carbonActivities.length > 0 && (
                 <Card>
-                  <h2 className="eco-heading-lg mb-4">📈 Your CO₂ Savings</h2>
+                  <h2 className="eco-heading-lg mb-1">📈 Your estimated CO₂ savings</h2>
+                  <p className="eco-text-subtle mb-4">Based on your self-reported activity entries.</p>
                   <CO2Chart carbonActivities={carbonActivities} />
                 </Card>
               )}
-              <GoalProgress />
-              <ActivityLog />
-            </motion.div>
+              <MonthlyGoalsProgress
+                key={currentUser.uid}
+                userId={currentUser.uid}
+              />
+              <ActivityLog
+                activities={recentActivities}
+                loading={activityLoading}
+                error={activityError}
+              />
+            </Motion.div>
 
             {/* Right Column */}
-            <motion.div variants={itemVariants}>
-              <Achievements />
-            </motion.div>
-          </motion.div>
+            <Motion.div variants={itemVariants}>
+              <Achievements
+                achievements={achievements}
+                loading={activityLoading}
+                error={activityError}
+              />
+            </Motion.div>
+          </Motion.div>
 
           {/* Leaderboard Section */}
-          <motion.div variants={itemVariants} initial="hidden" animate="visible">
+          <Motion.div variants={itemVariants} initial="hidden" animate="visible">
             <Leaderboard />
-          </motion.div>
+          </Motion.div>
         </div>
       </main>
 

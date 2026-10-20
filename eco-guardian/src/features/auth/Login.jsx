@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
@@ -16,6 +16,7 @@ export default function Login() {
 
   const { login, configurationError } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,7 +31,15 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email, password, rememberMe);
-      navigate("/dashboard");
+      const destination = location.state?.from;
+      navigate(
+        typeof destination === "string"
+          && destination.startsWith("/")
+          && !destination.startsWith("//")
+          ? destination
+          : "/dashboard",
+        { replace: true }
+      );
     } catch (err) {
       setError(err.message || "Failed to login");
     } finally {
@@ -206,7 +215,7 @@ export default function Login() {
           transition={{ delay: 0.7 }}
         >
           Don't have an account?{" "}
-          <Link to="/signup" className="text-eco-600 dark:text-eco-400 font-semibold hover:underline">
+          <Link to="/signup" state={location.state} className="text-eco-600 dark:text-eco-400 font-semibold hover:underline">
             Sign Up
           </Link>
         </motion.p>

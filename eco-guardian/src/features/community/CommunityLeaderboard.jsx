@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
@@ -14,40 +14,56 @@ export default function CommunityLeaderboard() {
 
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // fetch global leaderboard; "friends" view not implemented yet
   useEffect(() => {
+    let cancelled = false;
     getLeaderboard(20)
       .then((users) => {
+        if (cancelled) return;
         const formatted = users.map((u, idx) => ({
+          id: u.id,
           rank: idx + 1,
-          name: u.email || "Unknown",
+          name: u.displayName || "Community member",
           eco: u.ecoScore || 0,
           badge: idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : undefined,
         }));
         setLeaderboard(formatted);
       })
-      .catch((err) => console.error("failed to load leaderboard", err))
-      .finally(() => setLoading(false));
+      .catch((loadError) => {
+        if (cancelled) return;
+        console.error("Failed to load community leaderboard:", loadError);
+        setError("Leaderboard data could not be loaded. Please try again later.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const displayList =
     view === "global"
       ? leaderboard
-      : leaderboard.filter((u) => u.name === currentUser?.email);
+      : leaderboard.filter((u) => u.id === currentUser?.uid);
+  const currentRank = leaderboard.find((user) => user.id === currentUser?.uid);
+  const userAhead = currentRank
+    ? leaderboard.find((user) => user.rank === currentRank.rank - 1)
+    : null;
 
   return (
     <>
       <Navbar />
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 py-8">
         <div className="eco-container">
-          <motion.h1
+          <Motion.h1
             className="eco-heading-2xl mb-2"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
           >
             🌍 Community Leaderboard
-          </motion.h1>
+          </Motion.h1>
           <p className="eco-text-muted mb-6">
             See how you compare with other eco-warriors worldwide.
           </p>
@@ -64,7 +80,7 @@ export default function CommunityLeaderboard() {
               variant={view === "friends" ? "primary" : "outline"}
               onClick={() => setView("friends")}
             >
-              Friends Leaderboard
+              My Rank
             </Button>
           </div>
           {loading && (
@@ -76,6 +92,9 @@ export default function CommunityLeaderboard() {
             <p className="eco-text-muted text-center py-10">
               No leaderboard data available yet.
             </p>
+          )}
+          {error && (
+            <p className="eco-alert-error mb-6" role="alert">{error}</p>
           )}
 
           {/* Leaderboard Table */}
@@ -93,10 +112,10 @@ export default function CommunityLeaderboard() {
                 </thead>
                 <tbody>
                   {displayList.map((user, idx) => (
-                    <motion.tr
-                      key={user.name}
+                    <Motion.tr
+                      key={user.id}
                       className={`border-t ${
-                        user.name === "You"
+                        user.id === currentUser?.uid
                           ? "bg-eco-100 dark:bg-eco-900/20"
                           : ""
                       }`}
@@ -110,18 +129,19 @@ export default function CommunityLeaderboard() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <img
-                            src={`https://i.pravatar.cc/40?u=${user.name}`}
-                            alt={user.name}
-                            className="w-8 h-8 rounded-full"
-                          />
+                          <span
+                            aria-hidden="true"
+                            className="flex h-8 w-8 items-center justify-center rounded-full bg-eco-100 text-xs font-semibold text-eco-700 dark:bg-eco-900/30 dark:text-eco-300"
+                          >
+                            {user.name.slice(0, 2).toUpperCase()}
+                          </span>
                           <span>{user.name}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right font-semibold text-eco-600">
                         {user.eco} pts
                       </td>
-                    </motion.tr>
+                    </Motion.tr>
                   ))}
                 </tbody>
               </table>
@@ -132,14 +152,14 @@ export default function CommunityLeaderboard() {
           <Card className="mt-6">
             <h2 className="eco-heading-lg mb-2">Next Milestone</h2>
             <p className="eco-text-muted mb-4">
-              You need 245 more points to enter the top 10!
+              {!currentRank
+                ? "Log an eco activity to appear on the rankings."
+                : currentRank.rank === 1
+                  ? "You are at the top of the rankings. Keep it up!"
+                  : userAhead
+                    ? `${userAhead.eco - currentRank.eco + 1} more points to move up one place.`
+                    : "Keep logging eco activities to improve your rank."}
             </p>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-              <div
-                className="bg-eco-500 dark:bg-eco-400 h-3 rounded-full"
-                style={{ width: "80%" }}
-              ></div>
-            </div>
           </Card>
         </div>
       </div>

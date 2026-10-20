@@ -44,14 +44,20 @@ npm run dev
 1. Import this GitHub repository into Vercel and set the **Root Directory** to
    `eco-guardian`.
 2. Use `npm run build` as the build command and `dist` as the output directory.
-3. In **Project Settings → Environment Variables**, add the six Firebase
-   variables listed in [`.env.example`](./.env.example):
+3. To fix the **“Firebase setup is incomplete”** error, open
+   **Project Settings → Environment Variables** and add all six variables from
+   [`.env.example`](./.env.example), using the values from **Firebase Console →
+   Project settings → Your apps**:
    `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`,
    `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`,
    `VITE_FIREBASE_MESSAGING_SENDER_ID`, and `VITE_FIREBASE_APP_ID`.
-   Select **Preview** for a preview deployment. Set them for **Production**
-   separately when preparing a production release.
-4. Redeploy after adding or changing variables; Vite reads them at build time.
+   Select the environment for the deployment that shows the error: **Preview**
+   for preview deployments or **Production** for production. Add them to both
+   environments if both need to work. Ensure each value is populated with the
+   matching Firebase web app setting.
+4. Save the variables, then redeploy the failed deployment (or trigger a new
+   deployment). Vite reads these variables at build time, so an existing
+   deployment will not pick them up until it is rebuilt.
 5. Add the deployed site's hostname to Firebase Authentication's authorized
    domains.
 

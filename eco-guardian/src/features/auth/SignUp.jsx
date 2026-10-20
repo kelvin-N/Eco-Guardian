@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
@@ -15,6 +15,7 @@ export default function Signup() {
 
   const { signup, configurationError } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,8 +41,14 @@ export default function Signup() {
     setLoading(true);
     try {
       await signup(email, password);
-      setSuccess("Account created! Redirecting to dashboard...");
-      setTimeout(() => navigate("/dashboard"), 1500);
+      setSuccess("Account created! Redirecting...");
+      const destination = location.state?.from;
+      const target = typeof destination === "string"
+        && destination.startsWith("/")
+        && !destination.startsWith("//")
+        ? destination
+        : "/dashboard";
+      setTimeout(() => navigate(target, { replace: true }), 1500);
     } catch (err) {
       setError(err.message || "Failed to create account");
     } finally {
@@ -214,7 +221,7 @@ export default function Signup() {
           transition={{ delay: 0.6 }}
         >
           Already have an account?{" "}
-          <Link to="/login" className="text-eco-600 dark:text-eco-400 font-semibold hover:underline">
+          <Link to="/login" state={location.state} className="text-eco-600 dark:text-eco-400 font-semibold hover:underline">
             Sign In
           </Link>
         </motion.p>
