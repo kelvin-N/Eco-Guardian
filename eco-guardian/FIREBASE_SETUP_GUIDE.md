@@ -106,6 +106,8 @@ it's useful to know what they are:
 - `leaderboard` – public display names and scores only; it does not expose
   users' email addresses or profile documents.
 - `events` – community-created events and their organizer.
+- `challengeMembers` – display name and membership dates for users who opt in
+  to weekly eco-challenges; readable by signed-in community members.
 - `products` – community marketplace listings with GHS prices and reserved
   inventory.
 - `marketplaceOrders` – server-created orders; buyers, sellers, and
@@ -211,6 +213,18 @@ administrators can read it; the reporter can remove their evidence. Images are
 limited to 8 MB each (up to two), videos to 25 MB (one per report), with at
 most three files total. Evidence is not publicly listed, and download URLs are
 not saved in Firestore.
+
+Weekly community challenges count existing activity, carbon-action, and waste
+report records for the current Monday-to-Sunday UTC week. Joining a challenge
+shares the user's display name and app account identifier with signed-in
+community members and increments the participant count; personal progress is
+calculated from the user's own records and is not written to the membership
+document. Deploy the updated Firestore rules and indexes before using challenge
+membership:
+
+```bash
+firebase deploy --only firestore --project YOUR_FIREBASE_PROJECT_ID
+```
 
 ### Step 8: Set Up Firebase Storage (for file uploads)
 1. In Firebase Console, go to **Build** → **Storage**

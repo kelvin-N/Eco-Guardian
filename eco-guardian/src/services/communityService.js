@@ -150,6 +150,38 @@ export async function updateProductListing(productId, changes) {
   });
 }
 
+export async function getCommunityChallengeMembers(challengeId, periodStart) {
+  requireFirestore();
+  const membersQuery = query(
+    collection(db, "challengeMembers"),
+    where("challengeId", "==", challengeId),
+    where("periodStart", "==", periodStart)
+  );
+  const snapshot = await getDocs(membersQuery);
+  return snapshot.docs.map((memberDoc) => ({
+    id: memberDoc.id,
+    ...memberDoc.data(),
+  }));
+}
+
+export async function joinCommunityChallenge(uid, displayName, challengeId, periodStart) {
+  requireFirestore();
+  const memberId = `${challengeId}_${periodStart}_${uid}`;
+  await setDoc(doc(db, "challengeMembers", memberId), {
+    challengeId,
+    periodStart,
+    uid,
+    displayName: displayName.slice(0, 80),
+    joinedAt: serverTimestamp(),
+  });
+}
+
+export async function leaveCommunityChallenge(uid, challengeId, periodStart) {
+  requireFirestore();
+  const memberId = `${challengeId}_${periodStart}_${uid}`;
+  await deleteDoc(doc(db, "challengeMembers", memberId));
+}
+
 export async function getUserCart(uid) {
   requireFirestore();
   const snapshot = await getDocs(collection(db, "users", uid, "cart"));

@@ -21,6 +21,7 @@ import Settings from "./features/profile/Settings";
 import ReportIncident from "./features/reporting/ReportIncident";
 import ReportsList from "./features/reporting/ReportsList";
 import Organizations from "./features/organizations/Organizations";
+import CommunityChallenges from "./features/challenges/CommunityChallenges";
 import { useAuth } from "./context/AuthContext";
 
 // -------------------------------
@@ -176,6 +177,15 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <CommunityLeaderboard />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/challenges"
+              element={
+                <ProtectedRoute>
+                  <CommunityChallenges />
                 </ProtectedRoute>
               }
             />

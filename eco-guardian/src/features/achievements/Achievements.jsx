@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import useEcoScore from "../../hooks/useEcoScore";
 
 const BADGE_MAP = {
@@ -18,7 +18,7 @@ export default function Achievements() {
 
       <div className="flex flex-wrap gap-3">
         {achievements.map((a) => (
-          <motion.div
+          <Motion.div
             key={a.id}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -26,7 +26,7 @@ export default function Achievements() {
             className="px-4 py-2 bg-green-100 dark:bg-green-700 rounded-lg"
           >
             {BADGE_MAP[a.id]}
-          </motion.div>
+          </Motion.div>
         ))}
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 
@@ -67,14 +67,14 @@ export default function Signup() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 px-4 py-8">
-      <motion.div
+      <Motion.div
         className="w-full max-w-md"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
         {/* Header */}
-        <motion.div
+        <Motion.div
           className="text-center mb-8"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -85,7 +85,7 @@ export default function Signup() {
           </div>
           <h1 className="eco-heading-lg mb-2">Welcome to Eco-Guardian</h1>
           <p className="eco-text-muted">Create an account to start your eco-journey</p>
-        </motion.div>
+        </Motion.div>
 
         {/* Card */}
         <Card>
@@ -98,29 +98,29 @@ export default function Signup() {
 
             {/* Error Alert */}
             {error && (
-              <motion.div
+              <Motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 className="eco-alert-error"
               >
                 <span className="text-lg leading-relaxed">❌</span>
                 <span className="flex-1 text-sm leading-relaxed">{error}</span>
-              </motion.div>
+              </Motion.div>
             )}
 
             {/* Success Alert */}
             {success && (
-              <motion.div
+              <Motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 className="eco-alert-success"
               >
                 <span className="flex-1">✓ {success}</span>
-              </motion.div>
+              </Motion.div>
             )}
 
             {/* Email Input */}
-            <motion.div
+            <Motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
@@ -136,10 +136,10 @@ export default function Signup() {
                 required
                 className="eco-input"
               />
-            </motion.div>
+            </Motion.div>
 
             {/* Password Input */}
-            <motion.div
+            <Motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
@@ -158,10 +158,10 @@ export default function Signup() {
               <p className="text-xs eco-text-subtle mt-1">
                 Must be at least 6 characters long
               </p>
-            </motion.div>
+            </Motion.div>
 
             {/* Confirm Password Input */}
-            <motion.div
+            <Motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
@@ -177,10 +177,10 @@ export default function Signup() {
                 required
                 className="eco-input"
               />
-            </motion.div>
+            </Motion.div>
 
             {/* Submit Button */}
-            <motion.div
+            <Motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
@@ -194,7 +194,7 @@ export default function Signup() {
               >
                 {loading ? "Creating Account..." : "Create Account"}
               </Button>
-            </motion.div>
+            </Motion.div>
 
             {/* Divider */}
             <div className="eco-divider"></div>
@@ -214,7 +214,7 @@ export default function Signup() {
         </Card>
 
         {/* Login Link */}
-        <motion.p
+        <Motion.p
           className="mt-6 text-center eco-text-muted"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -224,10 +224,10 @@ export default function Signup() {
           <Link to="/login" state={location.state} className="text-eco-600 dark:text-eco-400 font-semibold hover:underline">
             Sign In
           </Link>
-        </motion.p>
+        </Motion.p>
 
         {/* Features Preview */}
-        <motion.div
+        <Motion.div
           className="mt-8 grid grid-cols-3 gap-3"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -246,8 +246,8 @@ export default function Signup() {
               <p className="font-medium eco-text-muted">{feature.title}</p>
             </div>
           ))}
-        </motion.div>
-      </motion.div>
+        </Motion.div>
+      </Motion.div>
     </div>
   );
 }

@@ -27,6 +27,7 @@ export default function Navbar() {
     { path: "/carbon", label: "Carbon", icon: "🌱" },
     { path: "/waste", label: "Waste", icon: "♻️" },
     { path: "/community", label: "Community", icon: "🌍" },
+    { path: "/challenges", label: "Challenges", icon: "🎯" },
     { path: "/analytics", label: "Analytics", icon: "📊" },
     { path: "/events", label: "Events", icon: "🎯" },
     { path: "/marketplace", label: "Marketplace", icon: "🛍️" },

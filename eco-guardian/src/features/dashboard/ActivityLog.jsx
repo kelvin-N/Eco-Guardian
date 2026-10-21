@@ -6,15 +6,18 @@ import { useAuth } from "../../context/AuthContext";
 
 export default function ActivityLog() {
   const { user: currentUser } = useAuth();
-  const [activities, setActivities] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [activityState, setActivityState] = useState({
+    userId: null,
+    activities: [],
+    loading: true,
+  });
+  const hasCurrentActivities = activityState.userId === currentUser?.uid;
+  const activities = hasCurrentActivities ? activityState.activities : [];
+  const loading = Boolean(db && currentUser)
+    && (!hasCurrentActivities || activityState.loading);
 
   useEffect(() => {
-    if (!db || !currentUser) {
-      setActivities([]);
-      setLoading(false);
-      return;
-    }
+    if (!db || !currentUser) return;
 
     const q = query(
       collection(db, "users", currentUser.uid, "activities"),
@@ -23,8 +26,11 @@ export default function ActivityLog() {
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const logs = snapshot.docs.map((doc) => doc.data());
-      setActivities(logs);
-      setLoading(false);
+      setActivityState({
+        userId: currentUser.uid,
+        activities: logs,
+        loading: false,
+      });
     });
 
     return () => unsubscribe();

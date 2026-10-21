@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import useEcoScore from "../../hooks/useEcoScore";
 
 export default function EcoScoreCard() {
@@ -8,7 +8,7 @@ export default function EcoScoreCard() {
     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg text-center">
       <h2 className="text-lg mb-2">Your Eco Score</h2>
 
-      <motion.div
+      <Motion.div
         key={ecoScore}
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1.1, opacity: 1 }}
@@ -16,7 +16,7 @@ export default function EcoScoreCard() {
         className="text-4xl font-bold text-green-500 mb-4"
       >
         {ecoScore}
-      </motion.div>
+      </Motion.div>
 
       <button
         onClick={addEcoPoint}

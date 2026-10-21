@@ -19,15 +19,17 @@ const ACHIEVEMENTS = [
 
 export default function useEcoScore() {
   const { user } = useAuth();
-  const [ecoScore, setEcoScore] = useState(0);
-  const [achievements, setAchievements] = useState([]);
+  const [scoreState, setScoreState] = useState({
+    userId: null,
+    ecoScore: 0,
+    achievements: [],
+  });
+  const hasCurrentUserScore = scoreState.userId === user?.uid;
+  const ecoScore = hasCurrentUserScore ? scoreState.ecoScore : 0;
+  const achievements = hasCurrentUserScore ? scoreState.achievements : [];
 
   useEffect(() => {
-    if (!user || !db) {
-      setEcoScore(0);
-      setAchievements([]);
-      return;
-    }
+    if (!user || !db) return;
 
     const userRef = doc(db, "users", user.uid);
 
@@ -35,8 +37,11 @@ export default function useEcoScore() {
       if (!docSnap.exists()) return;
 
       const data = docSnap.data();
-      setEcoScore(data.ecoScore || 0);
-      setAchievements(data.achievements || []);
+      setScoreState({
+        userId: user.uid,
+        ecoScore: data.ecoScore || 0,
+        achievements: data.achievements || [],
+      });
     });
 
     return () => unsubscribe();
