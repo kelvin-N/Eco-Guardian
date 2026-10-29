@@ -9,6 +9,8 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -147,14 +149,26 @@ export default function Signup() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 🔐 Password
               </label>
-              <input
-                type="password"
-                placeholder="At least 6 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="eco-input"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="At least 6 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  className="eco-input pr-16"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  className="absolute inset-y-0 right-3 my-auto h-10 px-2 text-sm font-medium text-eco-700 hover:text-eco-900 dark:text-eco-300 dark:hover:text-eco-100"
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
               <p className="text-xs eco-text-subtle mt-1">
                 Must be at least 6 characters long
               </p>
@@ -169,14 +183,26 @@ export default function Signup() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 🔐 Confirm Password
               </label>
-              <input
-                type="password"
-                placeholder="Repeat your password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                className="eco-input"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Repeat your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  className="eco-input pr-16"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((visible) => !visible)}
+                  aria-label={showConfirmPassword ? "Hide confirmation password" : "Show confirmation password"}
+                  aria-pressed={showConfirmPassword}
+                  className="absolute inset-y-0 right-3 my-auto h-10 px-2 text-sm font-medium text-eco-700 hover:text-eco-900 dark:text-eco-300 dark:hover:text-eco-100"
+                >
+                  {showConfirmPassword ? "Hide" : "Show"}
+                </button>
+              </div>
             </Motion.div>
 
             {/* Submit Button */}
