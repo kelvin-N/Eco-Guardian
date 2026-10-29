@@ -472,9 +472,7 @@ service cloud.firestore {
 
     match /marketplaceOrders/{orderId} {
       allow read: if signedIn()
-        && (resource.data.buyerId == request.auth.uid
-          || resource.data.sellerId == request.auth.uid
-          || isAdmin());
+        && resource.data.buyerId == request.auth.uid;
       allow create, update, delete: if false;
     }
 

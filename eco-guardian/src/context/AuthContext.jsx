@@ -75,9 +75,9 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (email, password, rememberMe = true) => {
     if (!isFirebaseConfigured) throw new Error(firebaseConfigurationError);
-    await loginUser(email, password);
+    await loginUser(email, password, rememberMe);
     return true;
   };
 

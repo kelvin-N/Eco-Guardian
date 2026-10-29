@@ -110,9 +110,8 @@ it's useful to know what they are:
   to weekly eco-challenges; readable by signed-in community members.
 - `products` – community marketplace listings with GHS prices and reserved
   inventory.
-- `marketplaceOrders` – server-created orders; buyers, sellers, and
-  administrators can read relevant orders, but only trusted Cloud Functions
-  can update payment status.
+- `marketplaceOrders` – server-created orders; buyers can read their own orders,
+  but only trusted Cloud Functions can update payment status.
 - `organizationInquiries` – signed-in organization pilot inquiries, readable
   only by administrators.
 - `incidentReports` – user-submitted reports; users can read their own, and

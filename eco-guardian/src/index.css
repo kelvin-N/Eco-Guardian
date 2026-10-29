@@ -23,6 +23,7 @@ textarea {
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -30,6 +31,14 @@ body {
   font-family: "Inter", system-ui, -apple-system, sans-serif;
   @apply text-gray-900 dark:text-gray-50;
   letter-spacing: -0.3px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 /* Scrollbar Styling */
@@ -176,10 +185,22 @@ body {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 
-  /* make container padding a bit larger on very small screens */
+  /* Keep content usable on narrow phone screens. */
   @media (max-width: 640px) {
     .eco-container {
-      @apply px-6;
+      @apply px-4;
+    }
+
+    .eco-card {
+      @apply p-4;
+    }
+
+    .eco-heading-xl {
+      @apply text-3xl;
+    }
+
+    .eco-heading-lg {
+      @apply text-2xl;
     }
   }
 

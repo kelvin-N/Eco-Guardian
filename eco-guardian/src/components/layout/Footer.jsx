@@ -25,17 +25,15 @@ export default function Footer() {
     Account: [
       { label: "Profile", to: "/profile" },
       { label: "Settings", to: "/settings" },
-      { label: "Sign in", to: "/login" },
-      { label: "Create account", to: "/signup" },
     ],
   };
 
   return (
     <footer className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-20">
       <div className="eco-container py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-6 sm:gap-8 mb-8">
           {/* Brand Column */}
-          <div className="lg:col-span-1">
+          <div className="col-span-2 lg:col-span-1">
             <Link to="/dashboard" className="flex items-center gap-2 mb-4">
               <span className="text-3xl">🌍</span>
               <div>
@@ -80,30 +78,6 @@ export default function Footer() {
           <p className="eco-text-subtle text-center md:text-left">
             © {currentYear} Eco-Guardian. All rights reserved.
           </p>
-          <div className="flex gap-6 eco-text-subtle">
-            <Link to="/login" className="hover:text-eco-600 dark:hover:text-eco-400 transition">
-              Sign in
-            </Link>
-            <Link to="/signup" className="hover:text-eco-600 dark:hover:text-eco-400 transition">
-              Create account
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Floating Banner */}
-      <div className="bg-gradient-to-r from-eco-500 to-blue-500 text-white py-4">
-        <div className="eco-container flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <p className="font-semibold">🌱 Join our mission to save the planet</p>
-            <p className="text-eco-50 text-sm">Start your eco-journey today!</p>
-          </div>
-          <Link
-            to="/signup"
-            className="px-6 py-2 bg-white text-eco-600 rounded-lg font-semibold hover:bg-eco-50 transition whitespace-nowrap"
-          >
-            Get Started
-          </Link>
         </div>
       </div>
     </footer>

@@ -1,9 +1,5 @@
 export const DEFAULT_SETTINGS = {
-  notifications: true,
-  weeklyReport: true,
   locationSharing: false,
-  ecoTips: true,
-  challengeAlerts: true,
 };
 
 export const DEFAULT_GOALS = { carbon: "50", waste: "25" };

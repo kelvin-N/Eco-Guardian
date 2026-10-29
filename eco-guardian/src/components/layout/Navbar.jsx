@@ -60,7 +60,7 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           {currentUser && (
-            <div className="hidden md:flex gap-1">
+            <div className="hidden 2xl:flex gap-1">
               {navLinks.map((link) => (
                 <Link key={link.path} to={link.path}>
                   <button
@@ -169,7 +169,7 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <div className="flex gap-2">
+              <div className="hidden sm:flex gap-2">
                 <Link to="/login">
                   <Button variant="outline" size="sm">
                     Login
@@ -185,8 +185,12 @@ export default function Navbar() {
 
             {/* Mobile Menu Button */}
             <button
+              type="button"
+              aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="site-navigation"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+              className="2xl:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
             >
               <svg
                 className="w-6 h-6"
@@ -210,28 +214,42 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Navigation */}
-        {mobileMenuOpen && currentUser && (
+        {mobileMenuOpen && (
           <Motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden pb-4 space-y-2"
+            id="site-navigation"
+            className="2xl:hidden pb-4 space-y-2"
           >
-            {navLinks.map((link) => (
-              <Link key={link.path} to={link.path}>
-                <button
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`w-full text-left px-4 py-2 rounded-lg transition-all ${
-                    isActive(link.path)
-                      ? "bg-eco-100 dark:bg-eco-900/30 text-eco-600 dark:text-eco-400"
-                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  }`}
-                >
-                  <span className="mr-2">{link.icon}</span>
-                  {link.label}
-                </button>
+            {currentUser ? navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block w-full text-left px-4 py-2 rounded-lg transition-all ${
+                  isActive(link.path)
+                    ? "bg-eco-100 dark:bg-eco-900/30 text-eco-600 dark:text-eco-400"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                }`}
+              >
+                <span className="mr-2">{link.icon}</span>
+                {link.label}
               </Link>
-            ))}
+            )) : (
+              <div className="flex gap-2 sm:hidden">
+                <Link to="/login" className="flex-1" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="outline" size="sm" className="w-full">
+                    Login
+                  </Button>
+                </Link>
+                <Link to="/signup" className="flex-1" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="primary" size="sm" className="w-full">
+                    Sign Up
+                  </Button>
+                </Link>
+              </div>
+            )}
           </Motion.div>
         )}
       </div>

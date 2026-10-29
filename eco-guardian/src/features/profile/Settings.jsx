@@ -186,36 +186,6 @@ export default function Settings() {
 
           <form onSubmit={savePreferences} className="space-y-6">
             <Card>
-              <h2 className="eco-heading-lg mb-4">Notifications</h2>
-              <div className="space-y-4">
-                {[
-                  ["notifications", "Push notifications"],
-                  ["weeklyReport", "Weekly progress report"],
-                  ["challengeAlerts", "Daily challenge reminders"],
-                  ["ecoTips", "Eco-friendly tips"],
-                ].map(([key, label]) => (
-                  <div key={key} className="flex items-center justify-between gap-4 rounded-xl bg-gray-50 dark:bg-gray-800 p-4">
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">{label}</p>
-                      <p className="text-sm eco-text-muted">Stay motivated and informed.</p>
-                    </div>
-                    <button
-                      type="button"
-                      aria-label={label}
-                      onClick={() => toggleSetting(key)}
-                      aria-pressed={preferences.settings[key]}
-                      className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${preferences.settings[key] ? "bg-eco-500" : "bg-gray-300 dark:bg-gray-700"}`}
-                    >
-                      <span
-                        className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${preferences.settings[key] ? "translate-x-6" : "translate-x-1"}`}
-                      />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card>
               <h2 className="eco-heading-lg mb-4">Privacy & Devices</h2>
               <div className="space-y-4">
                 <div className="flex items-center justify-between gap-4 rounded-xl bg-gray-50 dark:bg-gray-800 p-4">
