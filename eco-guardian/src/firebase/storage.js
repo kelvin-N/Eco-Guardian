@@ -5,6 +5,7 @@ import {
   getDownloadURL,
   ref,
   uploadBytes,
+  uploadBytesResumable,
 } from "firebase/storage";
 import { INCIDENT_EVIDENCE_TYPES } from "../services/incidentEvidence";
 
@@ -168,7 +169,7 @@ export const deleteFile = async (path) => {
 /**
  * Upload user avatar
  */
-export const uploadUserAvatar = async (uid, file) => {
+export const uploadUserAvatar = (uid, file, onProgress) => {
   if (!storage) {
     throw new Error("Firebase Storage is not configured. Check your Firebase project setup.");
   }
@@ -182,16 +183,38 @@ export const uploadUserAvatar = async (uid, file) => {
     throw new Error("Profile pictures must be 5 MB or smaller.");
   }
 
-  try {
-    const storageRef = ref(storage, `avatars/${uid}/profile`);
-    const snapshot = await uploadBytes(storageRef, file, {
-      contentType: file.type,
-      cacheControl: "private, no-cache, max-age=0, must-revalidate",
-    });
-    return await getDownloadURL(snapshot.ref);
-  } catch (error) {
-    throw new Error(error.message || "Failed to upload avatar");
-  }
+  const storageRef = ref(storage, `avatars/${uid}/profile`);
+  const uploadTask = uploadBytesResumable(storageRef, file, {
+    contentType: file.type,
+    cacheControl: "private, no-cache, max-age=0, must-revalidate",
+  });
+
+  return new Promise((resolve, reject) => {
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        onProgress?.(
+          Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)
+        );
+      },
+      (error) => {
+        if (error.code === "storage/unauthorized") {
+          reject(new Error(
+            "Firebase Storage denied this upload. Deploy the project's storage.rules and confirm Storage is enabled."
+          ));
+          return;
+        }
+        reject(new Error(error.message || "Failed to upload profile picture."));
+      },
+      async () => {
+        try {
+          resolve(await getDownloadURL(uploadTask.snapshot.ref));
+        } catch (error) {
+          reject(new Error(error.message || "The uploaded picture URL could not be loaded."));
+        }
+      }
+    );
+  });
 };
 
 export const deleteUserAvatar = async (uid) => {

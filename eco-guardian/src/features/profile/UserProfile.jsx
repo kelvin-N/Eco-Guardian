@@ -24,6 +24,7 @@ export default function UserProfile() {
   const [badges, setBadges] = useState([]);
   const [loadingBadges, setLoadingBadges] = useState(true);
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarProgress, setAvatarProgress] = useState(0);
   const [profileBusy, setProfileBusy] = useState(false);
   const [profileError, setProfileError] = useState("");
   const [profileMessage, setProfileMessage] = useState("");
@@ -96,18 +97,26 @@ export default function UserProfile() {
     if (!file || !currentUser) return;
 
     setAvatarBusy(true);
+    setAvatarProgress(0);
     setProfileError("");
     setProfileMessage("");
     try {
-      const photoURL = await uploadUserAvatar(currentUser.uid, file);
-      await updateProfile(undefined, photoURL);
+      const photoURL = await uploadUserAvatar(
+        currentUser.uid,
+        file,
+        setAvatarProgress
+      );
       await updateUserProfileData(currentUser.uid, { photoURL });
       setProfileMessage("Profile picture updated.");
     } catch (error) {
       console.error("Failed to update profile picture:", error);
-      setProfileError(error.message || "Profile picture could not be updated.");
+      const message = error.code === "permission-denied"
+        ? "Firestore denied saving your profile picture. Deploy the project's firestore.rules and try again."
+        : error.message || "Profile picture could not be updated.";
+      setProfileError(message);
     } finally {
       setAvatarBusy(false);
+      setAvatarProgress(0);
     }
   };
 
@@ -177,8 +186,23 @@ export default function UserProfile() {
                   loading={avatarBusy}
                   onClick={() => avatarInput.current?.click()}
                 >
-                  {avatarBusy ? "Uploading…" : "Change picture"}
+                  {avatarBusy ? `Uploading ${avatarProgress}%` : "Change picture"}
                 </Button>
+                {avatarBusy && (
+                  <div
+                    className="h-2 w-32 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
+                    role="progressbar"
+                    aria-label="Profile picture upload progress"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={avatarProgress}
+                  >
+                    <div
+                      className="h-full rounded-full bg-eco-500 transition-all"
+                      style={{ width: `${avatarProgress}%` }}
+                    />
+                  </div>
+                )}
                 {profilePhotoURL && (
                   <button
                     type="button"
@@ -212,6 +236,12 @@ export default function UserProfile() {
                 </div>
               </div>
             </div>
+            {profileError && (
+              <p className="eco-alert-error mb-4" role="alert">{profileError}</p>
+            )}
+            {profileMessage && (
+              <p className="eco-alert-success mb-4" role="status">{profileMessage}</p>
+            )}
           </Motion.div>
 
           {/* Quick Stats */}
@@ -242,12 +272,6 @@ export default function UserProfile() {
           {/* Bio Section */}
           <Card className="mb-6">
             <h2 className="eco-heading-lg mb-4">Profile Information</h2>
-            {profileError && (
-              <p className="eco-alert-error mb-4" role="alert">{profileError}</p>
-            )}
-            {profileMessage && (
-              <p className="eco-alert-success mb-4" role="status">{profileMessage}</p>
-            )}
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">
