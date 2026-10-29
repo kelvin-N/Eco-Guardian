@@ -87,20 +87,23 @@ export default function Leaderboard() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 p-4 bg-gradient-to-r from-eco-100 to-blue-100 dark:from-eco-900/30 dark:to-blue-900/30 rounded-xl border-l-4 border-eco-500"
         >
-          <div className="grid grid-cols-3 gap-4">
-            <div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+            <div className="min-w-0">
               <p className="eco-text-subtle text-sm mb-1">Your Rank</p>
-              <p className="eco-heading-lg text-eco-600 dark:text-eco-400">
-                {stats.rank === "-" ? "Unavailable" : `#${stats.rank}`}
+              <p className="eco-heading-lg truncate text-eco-600 dark:text-eco-400">
+                {stats.rank === "-" ? "—" : `#${stats.rank}`}
               </p>
+              {stats.rank === "-" && (
+                <p className="text-xs eco-text-subtle">Not ranked yet</p>
+              )}
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="eco-text-subtle text-sm mb-1">Your Score</p>
-              <p className="eco-heading-lg text-eco-600 dark:text-eco-400">
+              <p className="eco-heading-lg whitespace-nowrap text-eco-600 dark:text-eco-400">
                 {stats.score}
               </p>
             </div>
-            <div>
+            <div className="min-w-0 col-span-2 sm:col-span-1">
               <p className="eco-text-subtle text-sm mb-1">Next Milestone</p>
               <p className="eco-heading-lg text-eco-600 dark:text-eco-400">
                 {stats.score < 500 ? `${500 - stats.score} pts` : "🎉"}
