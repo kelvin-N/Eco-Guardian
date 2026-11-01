@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "eco-guardian-ac908"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }
