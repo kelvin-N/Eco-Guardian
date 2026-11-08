@@ -1,6 +1,6 @@
 # 🌍 Eco-Guardian
 
-Eco-Guardian is a mobile application designed to encourage sustainable living by tracking eco-friendly activities and rewarding users with points.
+Eco-Guardian is a Web application designed to encourage sustainable living by tracking eco-friendly activities and rewarding users with points.
 
 ## 🚀 Features
 

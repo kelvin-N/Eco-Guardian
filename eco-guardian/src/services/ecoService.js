@@ -207,11 +207,23 @@ export const getWasteReports = async (uid) => {
 
   const q = query(
     collection(db, "wasteReports"),
-    where("uid", "==", uid),
-    orderBy("createdAt", "desc")
+    where("uid", "==", uid)
   );
+
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+  const reports = snapshot.docs.map((d) => ({
+    id: d.id,
+    ...d.data(),
+  }));
+
+  // Sort newest first
+  return reports.sort((a, b) => {
+    const dateA = a.createdAt?.toMillis?.() || 0;
+    const dateB = b.createdAt?.toMillis?.() || 0;
+
+    return dateB - dateA;
+  });
 };
 
 // leaderboard (top users by ecoScore)
