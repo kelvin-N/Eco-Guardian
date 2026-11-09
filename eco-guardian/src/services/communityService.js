@@ -35,6 +35,99 @@ function requireFirestore() {
   }
 }
 
+const COLLECTION_WASTE_TYPES = [
+  "Plastic",
+  "Paper",
+  "Metal",
+  "Glass",
+  "Organic",
+  "E-waste",
+  "Mixed household waste",
+  "Other",
+];
+
+const COLLECTION_REQUEST_STATUSES = [
+  "pending",
+  "confirmed",
+  "completed",
+  "cancelled",
+];
+
+export async function createWasteCollectionRequest(uid, request) {
+  requireFirestore();
+  const location = request.location.trim();
+  const phone = request.phone.trim();
+  const notes = request.notes.trim();
+
+  if (!COLLECTION_WASTE_TYPES.includes(request.wasteType)) {
+    throw new Error("Choose a supported waste type.");
+  }
+  if (!Number.isFinite(request.amount) || request.amount <= 0 || request.amount > 10000) {
+    throw new Error("Estimated waste amount must be greater than 0 and no more than 10,000 kg.");
+  }
+  if (location.length < 5 || location.length > 300) {
+    throw new Error("Pickup location must be between 5 and 300 characters.");
+  }
+  if (phone.length < 7 || phone.length > 20 || !/^[+0-9() -]+$/.test(phone)) {
+    throw new Error("Enter a valid contact phone number.");
+  }
+  if (!(request.preferredAt instanceof Timestamp) || request.preferredAt.toMillis() <= Date.now()) {
+    throw new Error("Choose a future preferred pickup date and time.");
+  }
+  if (notes.length > 500) {
+    throw new Error("Additional notes must be 500 characters or fewer.");
+  }
+
+  const requestRef = await addDoc(collection(db, "wasteCollectionRequests"), {
+    uid,
+    wasteType: request.wasteType,
+    amount: request.amount,
+    location,
+    phone,
+    preferredAt: request.preferredAt,
+    notes,
+    status: "pending",
+    createdAt: serverTimestamp(),
+  });
+  return requestRef.id;
+}
+
+export async function getUserWasteCollectionRequests(uid) {
+  requireFirestore();
+  const requestsQuery = query(
+    collection(db, "wasteCollectionRequests"),
+    where("uid", "==", uid)
+  );
+  const snapshot = await getDocs(requestsQuery);
+  return snapshot.docs
+    .map((requestDoc) => ({ id: requestDoc.id, ...requestDoc.data() }))
+    .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+}
+
+export async function getAllWasteCollectionRequests() {
+  requireFirestore();
+  const requestsQuery = query(
+    collection(db, "wasteCollectionRequests"),
+    orderBy("createdAt", "desc")
+  );
+  const snapshot = await getDocs(requestsQuery);
+  return snapshot.docs.map((requestDoc) => ({
+    id: requestDoc.id,
+    ...requestDoc.data(),
+  }));
+}
+
+export async function updateWasteCollectionRequestStatus(requestId, status) {
+  requireFirestore();
+  if (!COLLECTION_REQUEST_STATUSES.includes(status)) {
+    throw new Error("Invalid waste collection request status.");
+  }
+  await updateDoc(doc(db, "wasteCollectionRequests", requestId), {
+    status,
+    updatedAt: serverTimestamp(),
+  });
+}
+
 export async function getCommunityEvents() {
   requireFirestore();
   const eventsQuery = query(

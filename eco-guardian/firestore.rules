@@ -515,6 +515,48 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    match /wasteCollectionRequests/{requestId} {
+      allow get, list: if isAdmin() || isOwner(resource.data.uid);
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'uid', 'wasteType', 'amount', 'location', 'phone',
+          'preferredAt', 'notes', 'status', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'uid', 'wasteType', 'amount', 'location', 'phone',
+          'preferredAt', 'notes', 'status', 'createdAt'
+        ])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.wasteType in [
+          'Plastic', 'Paper', 'Metal', 'Glass', 'Organic', 'E-waste',
+          'Mixed household waste', 'Other'
+        ]
+        && request.resource.data.amount is number
+        && request.resource.data.amount > 0
+        && request.resource.data.amount <= 10000
+        && request.resource.data.location is string
+        && request.resource.data.location.size() >= 5
+        && request.resource.data.location.size() <= 300
+        && request.resource.data.phone is string
+        && request.resource.data.phone.matches('[-+0-9() ]{7,20}')
+        && request.resource.data.preferredAt is timestamp
+        && request.resource.data.preferredAt > request.time
+        && request.resource.data.notes is string
+        && request.resource.data.notes.size() <= 500
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'updatedAt'])
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasAll(['status', 'updatedAt'])
+        && request.resource.data.status in [
+          'pending', 'confirmed', 'completed', 'cancelled'
+        ]
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

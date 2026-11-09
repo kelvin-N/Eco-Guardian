@@ -6,11 +6,17 @@ import Button from "../../components/ui/Button";
 import Loader from "../../components/ui/Loader";
 import { getAllUsers, setUserRole } from "../../services/ecoService";
 import { getOrganizationInquiries } from "../../services/organizationService";
+import {
+  getAllWasteCollectionRequests,
+  updateWasteCollectionRequestStatus,
+} from "../../services/communityService";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [organizationInquiries, setOrganizationInquiries] = useState([]);
+  const [collectionRequests, setCollectionRequests] = useState([]);
+  const [busyRequestId, setBusyRequestId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionMsg, setActionMsg] = useState("");
@@ -31,8 +37,34 @@ export default function AdminDashboard() {
         ? `${previous}. Organization inquiries could not be loaded.`
         : "Organization inquiries could not be loaded.");
     }
+    try {
+      setCollectionRequests(await getAllWasteCollectionRequests());
+    } catch (e) {
+      console.error("Failed to load waste collection requests:", e);
+      setError((previous) => previous
+        ? `${previous}. Waste collection requests could not be loaded.`
+        : "Waste collection requests could not be loaded.");
+    }
     setLoading(false);
   }, []);
+
+  const updateCollectionRequest = async (requestId, status) => {
+    setBusyRequestId(requestId);
+    setError("");
+    setActionMsg("");
+    try {
+      await updateWasteCollectionRequestStatus(requestId, status);
+      setCollectionRequests((previous) => previous.map((request) => (
+        request.id === requestId ? { ...request, status } : request
+      )));
+      setActionMsg("Waste collection request status updated.");
+    } catch (updateError) {
+      console.error("Failed to update waste collection request:", updateError);
+      setError("Unable to update the waste collection request status.");
+    } finally {
+      setBusyRequestId("");
+    }
+  };
 
   const toggleRole = async (user) => {
     const newRole = user.role === "admin" ? "user" : "admin";
@@ -95,6 +127,65 @@ export default function AdminDashboard() {
           </div>
         ) : (
           <>
+            <Card className="mb-8">
+              <h2 className="eco-heading-lg mb-2">
+                Waste collection requests ({collectionRequests.length})
+              </h2>
+              <p className="eco-text-muted mb-4">
+                Contact the requester to confirm provider availability and any fee before marking a request confirmed. No collection partner or price is configured in the app.
+              </p>
+              {collectionRequests.length === 0 ? (
+                <p className="eco-text-muted">No waste collection requests yet.</p>
+              ) : (
+                <div className="space-y-4">
+                  {collectionRequests.map((request) => (
+                    <article
+                      key={request.id}
+                      className="rounded-lg border border-gray-200 p-4 dark:border-gray-700"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <h3 className="font-semibold">
+                            {request.wasteType} · {Number(request.amount).toLocaleString()} kg
+                          </h3>
+                          <p className="text-sm eco-text-muted">{request.location}</p>
+                          <a
+                            href={`tel:${encodeURIComponent(request.phone)}`}
+                            className="text-sm text-eco-700 underline dark:text-eco-300"
+                          >
+                            {request.phone}
+                          </a>
+                        </div>
+                        <span className="text-sm font-semibold capitalize">
+                          {request.status}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm">
+                        Preferred pickup: {request.preferredAt?.toDate?.()?.toLocaleString?.() || "Date unavailable"}
+                      </p>
+                      {request.notes && (
+                        <p className="mt-2 text-sm eco-text-muted">{request.notes}</p>
+                      )}
+                      <label className="mt-3 block text-sm font-medium">
+                        Request status
+                        <select
+                          value={request.status}
+                          disabled={busyRequestId === request.id}
+                          onChange={(event) => updateCollectionRequest(request.id, event.target.value)}
+                          className="eco-input mt-1 max-w-xs"
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="confirmed">Confirmed</option>
+                          <option value="completed">Completed</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </label>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </Card>
+
             <Card className="mb-8">
               <h2 className="eco-heading-lg mb-4">
                 Organization pilot inquiries ({organizationInquiries.length})

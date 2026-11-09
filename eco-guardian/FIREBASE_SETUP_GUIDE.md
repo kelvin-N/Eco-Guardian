@@ -102,6 +102,12 @@ it's useful to know what they are:
 - `carbonActivities` – carbon-specific entries with a `co2` value.
 - `wasteReports` – logged recycling/clean-up events with `type`, `amount`,
   and `location`.
+- `wasteCollectionRequests` – private pickup requests containing the user's
+  waste details, contact number, location, and preferred time. Users can read
+  their own requests; administrators can review requests and update status.
+  Requests are not confirmed bookings: provider availability and fees must be
+  confirmed manually. Eco-Guardian does not currently have a confirmed
+  collection-provider integration.
 - `badges` – earned achievement records.
 - `leaderboard` – public display names and scores only; it does not expose
   users' email addresses or profile documents.
@@ -257,12 +263,14 @@ Deploy the updated Firestore rules before accepting inquiries:
 firebase deploy --only firestore --project YOUR_FIREBASE_PROJECT_ID
 ```
 
-Incident evidence previews download files directly through the authenticated
-Firebase Storage SDK so Storage Rules remain enforced; this requires a bucket
-CORS policy. The included `storage.cors.json` allows browser GET requests from
-any origin but does not grant data access—Firebase Storage Rules still control
-who can read files. Apply it using Google Cloud CLI/gsutil after replacing the
-bucket name with the value of `VITE_FIREBASE_STORAGE_BUCKET`:
+Browser uploads and authenticated incident-evidence previews require the
+Storage bucket's CORS policy to allow the relevant cross-origin requests. The
+included `storage.cors.json` allows GET, POST, PUT, and DELETE requests from
+any origin. CORS does not grant data access—Firebase Storage Rules still
+control who can read, upload, or delete files. For production, replace the
+wildcard origin in that file with your deployed app's exact HTTPS origin(s).
+Apply the policy using Google Cloud CLI/gsutil, replacing the bucket name with
+the value of `VITE_FIREBASE_STORAGE_BUCKET`:
 
 ```bash
 gsutil cors set storage.cors.json gs://YOUR_FIREBASE_STORAGE_BUCKET
