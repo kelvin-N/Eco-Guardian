@@ -15,6 +15,10 @@ import {
   getWasteReports,
 } from "../../services/ecoService";
 
+const metricFormatter = new Intl.NumberFormat(undefined, {
+  maximumFractionDigits: 2,
+});
+
 export default function EnvironmentalAnalytics() {
   const { currentUser } = useAuth();
   const [timeFrame, setTimeFrame] = useState("month");
@@ -99,7 +103,8 @@ export default function EnvironmentalAnalytics() {
                 {tf}
               </Button>
             ))}
-          </div>          {loading && (
+          </div>
+          {loading && (
             <div className="flex justify-center py-20">
               <Loader size="lg" />
             </div>
@@ -113,8 +118,9 @@ export default function EnvironmentalAnalytics() {
           >
             <Card>
               <p className="eco-text-muted text-sm">Estimated CO₂ savings</p>
-              <p className="eco-heading-lg text-eco-600">
-                {currentStats.co2Saved} kg
+              <p className="eco-heading-lg break-words text-eco-600">
+                {metricFormatter.format(currentStats.co2Saved)}{" "}
+                <span className="whitespace-nowrap text-xl">kg CO₂</span>
               </p>
               <p className="text-xs eco-text-muted mt-2">
                 Based on your self-reported activity entries; not independently verified.
@@ -122,8 +128,9 @@ export default function EnvironmentalAnalytics() {
             </Card>
             <Card>
               <p className="eco-text-muted text-sm">Waste Logged</p>
-              <p className="eco-heading-lg text-green-600">
-                {currentStats.wasteLogged} kg
+              <p className="eco-heading-lg break-words text-green-600">
+                {metricFormatter.format(currentStats.wasteLogged)}{" "}
+                <span className="whitespace-nowrap text-xl">kg</span>
               </p>
               <p className="text-xs eco-text-muted mt-2">
                 Diverted from landfills

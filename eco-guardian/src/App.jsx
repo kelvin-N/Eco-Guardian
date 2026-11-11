@@ -22,6 +22,7 @@ import ReportIncident from "./features/reporting/ReportIncident";
 import ReportsList from "./features/reporting/ReportsList";
 import Organizations from "./features/organizations/Organizations";
 import CommunityChallenges from "./features/challenges/CommunityChallenges";
+import LandingPage from "./features/landing/LandingPage";
 import { useAuth } from "./context/AuthContext";
 
 // -------------------------------
@@ -67,6 +68,9 @@ export default function App() {
         <Router>
           <AnimatePresence mode="wait">
             <Routes>
+
+            {/* PUBLIC LANDING PAGE */}
+            <Route path="/" element={<LandingPage />} />
 
             {/* AUTH */}
             <Route

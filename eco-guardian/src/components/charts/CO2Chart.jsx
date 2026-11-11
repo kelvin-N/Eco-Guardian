@@ -1,5 +1,9 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
+const metricFormatter = new Intl.NumberFormat(undefined, {
+  maximumFractionDigits: 2,
+});
+
 export default function CO2Chart({ carbonActivities }) {
   const getDailyData = () => {
     const days = {};
@@ -25,7 +29,7 @@ export default function CO2Chart({ carbonActivities }) {
 
     return Object.entries(days).map(([day, co2]) => ({
       day,
-      co2: parseFloat(co2.toFixed(1)),
+      co2: Number(co2.toFixed(2)),
     }));
   };
 
@@ -36,14 +40,23 @@ export default function CO2Chart({ carbonActivities }) {
       <LineChart data={data} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
         <XAxis dataKey="day" stroke="#6b7280" />
-        <YAxis stroke="#6b7280" />
+        <YAxis
+          stroke="#6b7280"
+          tickFormatter={(value) => metricFormatter.format(value)}
+          label={{
+            value: "kg CO₂",
+            angle: -90,
+            position: "insideLeft",
+            fill: "#6b7280",
+          }}
+        />
         <Tooltip
           contentStyle={{
             backgroundColor: "#111827",
             border: "1px solid #4b5563",
             borderRadius: "8px",
           }}
-          formatter={(value) => [`${value} kg CO₂`, "Estimated savings"]}
+          formatter={(value) => [`${metricFormatter.format(value)} kg CO₂`, "Estimated savings"]}
         />
         <Line
           type="monotone"

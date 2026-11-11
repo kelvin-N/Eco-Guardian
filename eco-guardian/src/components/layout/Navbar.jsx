@@ -60,11 +60,17 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           {currentUser && (
-            <div className="hidden 2xl:flex gap-1">
-              {navLinks.map((link) => (
-                <Link key={link.path} to={link.path}>
-                  <button
-                    className={`px-3 py-2 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 ${
+            <div className="mx-4 hidden min-w-0 flex-1 2xl:block">
+              <div
+                aria-label="Primary navigation"
+                className="flex gap-1 overflow-x-auto py-1"
+              >
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    aria-current={isActive(link.path) ? "page" : undefined}
+                    className={`shrink-0 whitespace-nowrap rounded-lg px-2 py-2 text-sm transition duration-200 ease-in-out hover:scale-105 ${
                       isActive(link.path)
                         ? "bg-eco-100 dark:bg-eco-900/30 text-eco-600 dark:text-eco-400"
                         : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -72,9 +78,9 @@ export default function Navbar() {
                   >
                     <span className="mr-1">{link.icon}</span>
                     {link.label}
-                  </button>
-                </Link>
-              ))}
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
 

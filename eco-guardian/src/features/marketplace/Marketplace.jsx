@@ -375,12 +375,19 @@ export default function Marketplace() {
                     {products.map((product) => {
                       const inCart = cart.find((item) => item.productId === product.id);
                       const isSeller = product.sellerId === userId;
+                      const soldOut = product.stock <= 0;
+                      const cartAtStockLimit = inCart?.quantity >= product.stock;
                       return (
                         <Card
                           key={product.id}
                           id={`product-${product.id}`}
-                          className={sharedProductId === product.id ? "ring-2 ring-eco-500" : ""}
+                          className={`relative ${sharedProductId === product.id ? "ring-2 ring-eco-500" : ""}`}
                         >
+                          {soldOut && (
+                            <span className="absolute right-8 top-8 z-10 rounded-full bg-red-700 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white shadow">
+                              Sold out
+                            </span>
+                          )}
                           {product.images?.length > 0 ? (
                             <div className="mb-4 grid grid-cols-2 gap-2">
                               {product.images.slice(0, 5).map((image, index) => (
@@ -416,8 +423,20 @@ export default function Marketplace() {
                             <span className="text-lg font-bold text-eco-700 dark:text-eco-300">
                               {formatProductPrice(product)}
                             </span>
-                            <span className="text-xs eco-text-subtle">
-                              {product.stock} in stock
+                            <span
+                              className={`text-xs font-semibold ${
+                                soldOut
+                                  ? "text-red-700 dark:text-red-300"
+                                  : product.stock <= 3
+                                    ? "text-amber-700 dark:text-amber-300"
+                                    : "eco-text-subtle"
+                              }`}
+                            >
+                              {soldOut
+                                ? "Out of stock"
+                                : product.stock <= 3
+                                  ? `Only ${product.stock} left`
+                                  : `${product.stock} in stock`}
                             </span>
                           </div>
                           {isSeller ? (
@@ -497,18 +516,20 @@ export default function Marketplace() {
                               variant="outline"
                               disabled={
                                 busyProductId === product.id
-                                || product.stock <= 0
-                                || inCart?.quantity >= product.stock
+                              || soldOut
+                              || cartAtStockLimit
                                 || product.currency !== "GHS"
                               }
                               onClick={() => handleAddToCart(product)}
                             >
                               {product.currency !== "GHS"
                                 ? "Unavailable until repriced in GHS"
-                                : product.stock <= 0
+                                : soldOut
                                   ? "Sold out"
                                   : busyProductId === product.id
                                 ? "Adding..."
+                                : cartAtStockLimit
+                                  ? "Maximum quantity in cart"
                                 : inCart
                                   ? `Add another (${inCart.quantity} in cart)`
                                   : "Add to cart"}

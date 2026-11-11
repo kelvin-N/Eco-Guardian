@@ -4,6 +4,7 @@ Eco-Guardian is a Web application designed to encourage sustainable living by tr
 
 ## 🚀 Features
 
+- 🌍 Public landing page introducing Eco-Guardian and linking to account sign-in and registration
 - 🔐 Firebase Authentication
 - 📊 Real-time Dashboard for users
 - 🌱 Eco Tips

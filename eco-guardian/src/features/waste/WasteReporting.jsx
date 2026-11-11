@@ -14,6 +14,7 @@ import {
   checkAndAwardBadges,
 } from "../../services/ecoService";
 import {
+  cancelWasteCollectionRequest,
   createWasteCollectionRequest,
   getUserWasteCollectionRequests,
 } from "../../services/communityService";
@@ -31,6 +32,7 @@ export default function WasteReporting() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [requestSubmitting, setRequestSubmitting] = useState(false);
+  const [cancellingRequestId, setCancellingRequestId] = useState("");
   const [type, setType] = useState("Plastic");
   const [amount, setAmount] = useState("");
   const [location, setLocation] = useState("");
@@ -150,6 +152,27 @@ export default function WasteReporting() {
       setCollectionError(requestError.message || "Your collection request could not be submitted.");
     } finally {
       setRequestSubmitting(false);
+    }
+  };
+
+  const cancelCollectionRequest = async (requestId) => {
+    if (!userId) return;
+    setCollectionError("");
+    setCollectionSuccess("");
+    setCancellingRequestId(requestId);
+    try {
+      await cancelWasteCollectionRequest(userId, requestId);
+      setCollectionRequests((previous) => previous.map((request) => (
+        request.id === requestId
+          ? { ...request, status: "cancelled" }
+          : request
+      )));
+      setCollectionSuccess("Your collection request was cancelled.");
+    } catch (cancelError) {
+      console.error("Failed to cancel waste collection request:", cancelError);
+      setCollectionError(cancelError.message || "Your collection request could not be cancelled.");
+    } finally {
+      setCancellingRequestId("");
     }
   };
 
@@ -368,9 +391,21 @@ export default function WasteReporting() {
                       Preferred pickup: {formatCollectionDate(request.preferredAt)}
                     </p>
                     {request.status === "pending" && (
-                      <p className="mt-2 text-xs eco-text-subtle">
-                        Pending confirmation. No payment has been taken.
-                      </p>
+                      <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-xs eco-text-subtle">
+                          Pending confirmation. No payment has been taken.
+                        </p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={Boolean(cancellingRequestId)}
+                          loading={cancellingRequestId === request.id}
+                          onClick={() => cancelCollectionRequest(request.id)}
+                        >
+                          Cancel request
+                        </Button>
+                      </div>
                     )}
                   </article>
                 ))}

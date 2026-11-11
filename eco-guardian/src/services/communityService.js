@@ -128,6 +128,30 @@ export async function updateWasteCollectionRequestStatus(requestId, status) {
   });
 }
 
+export async function cancelWasteCollectionRequest(uid, requestId) {
+  requireFirestore();
+  const requestRef = doc(db, "wasteCollectionRequests", requestId);
+  await runTransaction(db, async (transaction) => {
+    const requestSnapshot = await transaction.get(requestRef);
+    if (!requestSnapshot.exists()) {
+      throw new Error("This collection request could not be found.");
+    }
+
+    const collectionRequest = requestSnapshot.data();
+    if (collectionRequest.uid !== uid) {
+      throw new Error("You can only cancel your own collection requests.");
+    }
+    if (collectionRequest.status !== "pending") {
+      throw new Error("Only pending collection requests can be cancelled.");
+    }
+
+    transaction.update(requestRef, {
+      status: "cancelled",
+      updatedAt: serverTimestamp(),
+    });
+  });
+}
+
 export async function getCommunityEvents() {
   requireFirestore();
   const eventsQuery = query(
