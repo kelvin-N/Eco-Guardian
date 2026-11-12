@@ -66,3 +66,8 @@ Do not commit `.env` or `.env.local`, or put Firebase values in GitHub source
 files. Configure values in Vercel's environment settings; local environment
 files are ignored by Git. See [FIREBASE_SETUP_GUIDE.md](./FIREBASE_SETUP_GUIDE.md)
 for Firebase configuration and security-rule guidance.
+
+Account deletion uses the `deleteOwnAccount` Firebase callable function. Deploy
+it with `firebase deploy --only functions:deleteOwnAccount` after deploying the
+app changes; account deletion will report an error until the function is
+available in the configured Firebase project.

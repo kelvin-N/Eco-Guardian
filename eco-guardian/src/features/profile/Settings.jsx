@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { motion as Motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/layout/Navbar";
 import Footer from "../../components/layout/Footer";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import { useTheme } from "../../context/ThemeContext";
+import { changeUserPassword, deleteCurrentAccount } from "../../firebase/auth";
 import { getCarbonActivities, getWasteReports } from "../../services/ecoService";
 import {
   DEFAULT_GOALS,
@@ -52,6 +54,7 @@ function GoalProgress({ label, unit, value, target, color }) {
 
 export default function Settings() {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const userId = currentUser?.uid;
   const { isDark, toggleTheme } = useTheme();
   const [preferences, setPreferences] = useState(() =>
@@ -62,6 +65,66 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
+  const handleChangePassword = async (event) => {
+    event.preventDefault();
+    setPasswordError("");
+    setPasswordMessage("");
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("The new passwords do not match.");
+      return;
+    }
+
+    setPasswordSaving(true);
+    try {
+      await changeUserPassword(currentPassword, newPassword);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setPasswordMessage("Your password has been changed.");
+    } catch (changeError) {
+      console.error("Failed to change password:", changeError);
+      setPasswordError(changeError.message || "Unable to change your password.");
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async (event) => {
+    event.preventDefault();
+    setDeleteError("");
+
+    if (deleteConfirmation !== "DELETE") {
+      setDeleteError('Type "DELETE" to confirm account deletion.');
+      return;
+    }
+
+    setDeletingAccount(true);
+    try {
+      await deleteCurrentAccount(deletePassword);
+      try {
+        localStorage.removeItem(getPreferencesKey(userId || "guest"));
+      } catch (storageError) {
+        console.error("Could not remove local account preferences:", storageError);
+      }
+      navigate("/", { replace: true });
+    } catch (deleteError) {
+      console.error("Failed to delete account:", deleteError);
+      setDeleteError(deleteError.message || "Unable to delete your account.");
+      setDeletingAccount(false);
+    }
+  };
 
   useEffect(() => {
     setPreferences(loadPreferences(userId || "guest"));
@@ -300,6 +363,119 @@ export default function Settings() {
               </div>
             </Card>
           </form>
+
+          <div className="mt-6 space-y-6">
+            <Card>
+              <h2 className="eco-heading-lg mb-2">Change Password</h2>
+              <p className="eco-text-muted mb-5">
+                Confirm your current password before choosing a new one.
+              </p>
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                  Current password
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    value={currentPassword}
+                    onChange={(event) => setCurrentPassword(event.target.value)}
+                    className="eco-input mt-2"
+                  />
+                </label>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                    New password
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      minLength={6}
+                      required
+                      value={newPassword}
+                      onChange={(event) => setNewPassword(event.target.value)}
+                      className="eco-input mt-2"
+                    />
+                  </label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                    Confirm new password
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      minLength={6}
+                      required
+                      value={confirmPassword}
+                      onChange={(event) => setConfirmPassword(event.target.value)}
+                      className="eco-input mt-2"
+                    />
+                  </label>
+                </div>
+                {passwordError && (
+                  <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+                    {passwordError}
+                  </p>
+                )}
+                {passwordMessage && (
+                  <p className="text-sm text-eco-700 dark:text-eco-300" role="status">
+                    {passwordMessage}
+                  </p>
+                )}
+                <Button type="submit" disabled={passwordSaving}>
+                  {passwordSaving ? "Changing..." : "Change Password"}
+                </Button>
+              </form>
+            </Card>
+
+            <Card className="border border-red-200 dark:border-red-900">
+              <h2 className="eco-heading-lg mb-2 text-red-700 dark:text-red-400">
+                Delete Account
+              </h2>
+              <p className="eco-text-muted mb-4">
+                This permanently deletes your account, profile, and associated
+                app data. Marketplace order records are retained for
+                transaction history; payment-provider records are managed by
+                the provider. This action cannot be undone.
+              </p>
+              <form onSubmit={handleDeleteAccount} className="space-y-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                  Current password
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    value={deletePassword}
+                    onChange={(event) => setDeletePassword(event.target.value)}
+                    className="eco-input mt-2"
+                  />
+                </label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                  Type DELETE to confirm
+                  <input
+                    type="text"
+                    autoComplete="off"
+                    required
+                    value={deleteConfirmation}
+                    onChange={(event) => setDeleteConfirmation(event.target.value)}
+                    className="eco-input mt-2"
+                  />
+                </label>
+                {deleteError && (
+                  <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+                    {deleteError}
+                  </p>
+                )}
+                <Button
+                  type="submit"
+                  variant="danger"
+                  disabled={
+                    deletingAccount
+                    || deleteConfirmation !== "DELETE"
+                    || !deletePassword
+                  }
+                >
+                  {deletingAccount ? "Deleting account..." : "Permanently Delete Account"}
+                </Button>
+              </form>
+            </Card>
+          </div>
         </div>
       </main>
       <Footer />

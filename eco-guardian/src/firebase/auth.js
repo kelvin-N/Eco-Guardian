@@ -1,14 +1,18 @@
-import { auth, firebaseConfigurationError } from "./firebaseConfig";
+import { auth, firebaseConfigurationError, functions } from "./firebaseConfig";
 import {
   browserLocalPersistence,
   browserSessionPersistence,
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   setPersistence,
   signInWithEmailAndPassword,
   signOut,
+  updatePassword,
   updateProfile,
   sendPasswordResetEmail,
 } from "firebase/auth";
+import { httpsCallable } from "firebase/functions";
 
 /**
  * Helper function to format Firebase error messages with helpful context
@@ -60,6 +64,11 @@ You can open the FIREBASE_SETUP_GUIDE.md in the project root for step-by-step in
       title: "Incorrect Password",
       message: "The password you entered is incorrect.",
       hint: "Please try again or use the password reset option.",
+    },
+    "auth/requires-recent-login": {
+      title: "Sign In Again",
+      message: "For your security, sign in again before changing your password.",
+      hint: "Sign out, sign back in, then try again.",
     },
     "auth/email-already-in-use": {
       title: "Email Already Registered",
@@ -150,6 +159,56 @@ export const updateUserProfile = async (profileChanges) => {
     const formattedError = formatFirebaseError(error, "Update Profile");
     console.error(formattedError);
     throw new Error(formattedError);
+  }
+};
+
+const reauthenticateWithPassword = async (user, password) => {
+  if (!user?.email || !user.providerData.some(({ providerId }) => providerId === "password")) {
+    throw new Error("This action currently requires an email-and-password account.");
+  }
+  await reauthenticateWithCredential(
+    user,
+    EmailAuthProvider.credential(user.email, password)
+  );
+};
+
+/**
+ * Change the signed-in user's password after verifying the current password.
+ */
+export const changeUserPassword = async (currentPassword, newPassword) => {
+  if (!auth) throw new Error(firebaseConfigurationError);
+  const user = auth.currentUser;
+  if (!user) throw new Error("Sign in before changing your password.");
+  try {
+    await reauthenticateWithPassword(user, currentPassword);
+    await updatePassword(user, newPassword);
+  } catch (error) {
+    const formattedError = formatFirebaseError(error, "Change Password");
+    throw new Error(formattedError);
+  }
+};
+
+/**
+ * Delete the user's data and Firebase Authentication account after reauthentication.
+ */
+export const deleteCurrentAccount = async (currentPassword) => {
+  if (!auth) throw new Error(firebaseConfigurationError);
+  if (!functions) throw new Error("Firebase Functions is not configured.");
+  const user = auth.currentUser;
+  if (!user) throw new Error("Sign in before deleting your account.");
+  try {
+    await reauthenticateWithPassword(user, currentPassword);
+    const deleteAccount = httpsCallable(functions, "deleteOwnAccount");
+    await deleteAccount();
+    await signOut(auth);
+  } catch (error) {
+    const formattedError = error?.code
+      ? formatFirebaseError(error, "Delete Account")
+      : error;
+    console.error("Failed to delete account:", formattedError);
+    throw formattedError instanceof Error
+      ? formattedError
+      : new Error("Failed to delete account. Please try again.");
   }
 };
 

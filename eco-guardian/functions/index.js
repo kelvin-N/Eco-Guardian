@@ -1,7 +1,9 @@
 import crypto from "node:crypto";
 import { Buffer } from "node:buffer";
 import { initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 import { FieldValue, Timestamp, getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import { defineSecret, defineString } from "firebase-functions/params";
 import { HttpsError, onCall, onRequest } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
@@ -507,3 +509,62 @@ export const expireMarketplaceReservations = onSchedule(
     }
   }
 );
+
+const userOwnedCollections = [
+  ["activities", "uid"],
+  ["carbonActivities", "uid"],
+  ["wasteReports", "uid"],
+  ["badges", "uid"],
+  ["challengeMembers", "uid"],
+  ["incidentReports", "uid"],
+  ["organizationInquiries", "uid"],
+  ["wasteCollectionRequests", "uid"],
+  ["events", "createdBy"],
+  ["products", "sellerId"],
+];
+
+export const deleteOwnAccount = onCall({ timeoutSeconds: 540 }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Sign in before deleting your account.");
+  }
+
+  const authTime = Number(request.auth.token.auth_time);
+  const now = Date.now() / 1000;
+  if (!Number.isFinite(authTime) || now - authTime > 300 || authTime > now + 30) {
+    throw new HttpsError(
+      "failed-precondition",
+      "For your security, verify your password again before deleting your account."
+    );
+  }
+
+  const uid = request.auth.uid;
+  try {
+    await Promise.all(
+      userOwnedCollections.map(async ([collectionName, ownerField]) => {
+        const snapshot = await db.collection(collectionName)
+          .where(ownerField, "==", uid)
+          .get();
+        await Promise.all(
+          snapshot.docs.map((document) => db.recursiveDelete(document.ref))
+        );
+      })
+    );
+
+    await Promise.all([
+      db.recursiveDelete(db.collection("users").doc(uid)),
+      db.recursiveDelete(db.collection("leaderboard").doc(uid)),
+      getStorage().bucket().deleteFiles({ prefix: `avatars/${uid}/` }),
+      getStorage().bucket().deleteFiles({ prefix: `incidentEvidence/${uid}/` }),
+      getStorage().bucket().deleteFiles({ prefix: `products/${uid}/` }),
+    ]);
+
+    await getAuth().deleteUser(uid);
+    return { success: true };
+  } catch (error) {
+    logger.error("Account deletion failed.", { uid, error });
+    throw new HttpsError(
+      "internal",
+      "Account deletion could not be completed. Please try again or contact support."
+    );
+  }
+});

@@ -56,17 +56,17 @@ export default function LandingPage() {
       <header className="relative z-10">
         <nav
           aria-label="Main navigation"
-          className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8"
+          className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-8 sm:py-5"
         >
-          <Link to="/" className="flex items-center gap-3" aria-label="Eco-Guardian home">
-            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-2xl dark:bg-emerald-900/50">
+          <Link to="/" className="flex items-center gap-2 sm:gap-3" aria-label="Eco-Guardian home">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-2xl sm:h-11 sm:w-11 dark:bg-emerald-900/50">
               🌍
             </span>
             <span className="leading-tight">
-              <span className="block text-lg font-extrabold tracking-tight text-emerald-800 dark:text-emerald-300">
+              <span className="block text-base font-extrabold tracking-tight text-emerald-800 sm:text-lg dark:text-emerald-300">
                 Eco-Guardian
               </span>
-              <span className="block text-xs font-medium text-slate-500 dark:text-slate-400">
+              <span className="hidden text-xs font-medium text-slate-500 sm:block dark:text-slate-400">
                 Small steps. Lasting change.
               </span>
             </span>
@@ -87,20 +87,23 @@ export default function LandingPage() {
             </a>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 sm:gap-3">
             {!currentUser && (
               <Link
                 to="/login"
-                className="hidden rounded-full px-4 py-2 text-sm font-bold text-slate-700 hover:bg-white md:inline-flex dark:text-slate-200 dark:hover:bg-slate-800"
+                className="inline-flex rounded-full px-2 py-2 text-xs font-bold text-slate-700 hover:bg-white sm:px-4 sm:text-sm dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 Sign in
               </Link>
             )}
             <Link
               to={startLink}
-              className="inline-flex items-center justify-center rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-900/15 hover:-translate-y-0.5 hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
+              className="inline-flex items-center justify-center rounded-full bg-emerald-700 px-3 py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-900/15 hover:-translate-y-0.5 hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 sm:px-5 sm:text-sm dark:focus:ring-offset-slate-950"
             >
-              {currentUser ? "Open app" : "Get started"}
+              <span className="sm:hidden">{currentUser ? "Open app" : "Join"}</span>
+              <span className="hidden sm:inline">
+                {currentUser ? "Open app" : "Get started"}
+              </span>
             </Link>
           </div>
         </nav>
@@ -161,7 +164,7 @@ export default function LandingPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                    YOUR IMPACT, IN VIEW
+                    A SAMPLE PROGRESS VIEW
                   </p>
                   <h2 className="mt-1 text-xl font-extrabold tracking-tight">
                     Every action adds up
@@ -289,7 +292,7 @@ export default function LandingPage() {
           <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
             <div>
               <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-400">
-                No perfect required
+                No perfection required
               </p>
               <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
                 Progress looks different for everyone.
