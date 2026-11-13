@@ -281,4 +281,449 @@ export const LESSONS = [
       },
     ],
   },
+  {
+    id: "climate-everyday-choices",
+    title: "Everyday choices and climate impact",
+    category: "Climate",
+    level: "Beginner",
+    duration: "6 min",
+    icon: "🌍",
+    summary: "Learn how energy, food, travel, and purchasing choices can contribute to climate action.",
+    sections: [
+      {
+        heading: "Look at the whole activity",
+        paragraphs: [
+          "Climate impact can come from producing energy, making goods, growing food, and moving people and products. The largest opportunities differ between households and communities, so there is no single action that works best for everyone.",
+          "When comparing options, consider how often an activity happens, what alternatives are available, and whether a change is practical and accessible.",
+        ],
+      },
+      {
+        heading: "Choose changes you can sustain",
+        paragraphs: [
+          "Using less energy where practical, choosing lower-impact travel when safe, reducing food waste, and keeping useful items in service longer are possible starting points. Community infrastructure and public decisions also shape what choices are available.",
+        ],
+      },
+    ],
+    takeaway: "Focus on realistic changes that fit your circumstances, and remember that lasting climate action also depends on wider community and system changes.",
+    quiz: [
+      {
+        question: "Why can climate-friendly priorities differ between households?",
+        options: [
+          "People have different needs, resources, and available alternatives",
+          "Climate science only applies in some homes",
+          "Every household uses exactly the same energy",
+        ],
+        answer: 0,
+        explanation: "Circumstances and available options affect which changes are practical.",
+      },
+      {
+        question: "Which is a reasonable way to begin reducing everyday impact?",
+        options: [
+          "Choose a practical change you can maintain",
+          "Make every change at once regardless of cost or safety",
+          "Assume one action solves climate change",
+        ],
+        answer: 0,
+        explanation: "Sustainable progress comes from realistic actions and broader collective effort.",
+      },
+      {
+        question: "What else influences the choices people can make?",
+        options: ["Community infrastructure and public decisions", "Only personal motivation", "The color of household bins"],
+        answer: 0,
+        explanation: "Systems and infrastructure shape which options are accessible.",
+      },
+    ],
+  },
+  {
+    id: "waste-composting",
+    title: "Composting food and garden scraps",
+    category: "Waste",
+    level: "Beginner",
+    duration: "5 min",
+    icon: "🍂",
+    summary: "Understand what composting does and how to follow local collection guidance.",
+    sections: [
+      {
+        heading: "What composting does",
+        paragraphs: [
+          "Composting is the managed breakdown of suitable organic material into a soil-like product. It can keep some food and garden scraps out of general waste and return organic matter for appropriate uses.",
+          "What belongs in a compost bin depends on the system. A home pile, community site, and municipal food-scrap program may accept different materials.",
+        ],
+      },
+      {
+        heading: "Keep it suitable for the system",
+        paragraphs: [
+          "Check the program's accepted-material list before adding items. Some systems accept only fruit and vegetable scraps, while others can process meat, dairy, or certified compostable products. Keep plastic and other contaminants out unless the program specifically accepts them.",
+        ],
+      },
+    ],
+    takeaway: "Follow the rules for your local composting system; accepted materials and collection methods vary.",
+    quiz: [
+      {
+        question: "What should you check before adding scraps to a compost program?",
+        options: [
+          "The program's accepted-material guidance",
+          "Whether the packaging says recyclable",
+          "Whether the scraps are brightly colored",
+        ],
+        answer: 0,
+        explanation: "Composting systems have different processes and accepted materials.",
+      },
+      {
+        question: "What is a common composting goal?",
+        options: [
+          "Manage suitable organic material and return organic matter",
+          "Turn all waste into drinking water",
+          "Make plastics break down in every compost bin",
+        ],
+        answer: 0,
+        explanation: "Composting manages appropriate organic materials, not all kinds of waste.",
+      },
+      {
+        question: "Should plastic be added to a compost bin?",
+        options: [
+          "Only if the local program explicitly accepts that item",
+          "Always, if it is small",
+          "Yes, because all plastic composts quickly",
+        ],
+        answer: 0,
+        explanation: "Avoid contamination and follow the specific program's rules.",
+      },
+    ],
+  },
+  {
+    id: "waste-electronics",
+    title: "Handle old electronics responsibly",
+    category: "Waste",
+    level: "Intermediate",
+    duration: "5 min",
+    icon: "🔌",
+    summary: "Explore repair, reuse, and safe local options for unwanted electronics.",
+    sections: [
+      {
+        heading: "Keep useful devices in use",
+        paragraphs: [
+          "Electronics contain materials and components that take resources to produce. If a device still works, consider continuing to use it, repairing it, or passing it on through a trusted reuse option.",
+          "Before donating or recycling a device, protect your personal information. Back up what you need, sign out of accounts, and use the device maker's instructions to securely erase it.",
+        ],
+      },
+      {
+        heading: "Use a suitable collection route",
+        paragraphs: [
+          "Do not put batteries or electronics in ordinary recycling unless local guidance says they are accepted. Use an authorized take-back or e-waste collection service where available, and follow instructions for damaged or swollen batteries.",
+        ],
+      },
+    ],
+    takeaway: "Prioritize safe reuse or repair, protect personal data, and use local authorized collection for devices and batteries.",
+    quiz: [
+      {
+        question: "What is a good option for a working device you no longer need?",
+        options: ["Consider repair, continued use, or trusted reuse", "Break it apart and leave it outside", "Put it in any recycling bin"],
+        answer: 0,
+        explanation: "Keeping useful devices in service can avoid unnecessary disposal.",
+      },
+      {
+        question: "What should you do before passing on a device?",
+        options: [
+          "Back up needed files and securely erase personal data",
+          "Share your account password with the next owner",
+          "Leave all accounts signed in",
+        ],
+        answer: 0,
+        explanation: "Protecting your data is an important part of device reuse.",
+      },
+      {
+        question: "Where should old electronics go?",
+        options: [
+          "An authorized collection route recommended locally",
+          "Any household waste bin",
+          "A storm drain",
+        ],
+        answer: 0,
+        explanation: "Local authorized programs can handle electronics and batteries appropriately.",
+      },
+    ],
+  },
+  {
+    id: "energy-efficient-appliances",
+    title: "Choose and use appliances efficiently",
+    category: "Energy",
+    level: "Intermediate",
+    duration: "5 min",
+    icon: "⚡",
+    summary: "Use energy labels and everyday habits to make informed appliance choices.",
+    sections: [
+      {
+        heading: "Compare before you buy",
+        paragraphs: [
+          "When an appliance needs replacing, compare its energy information using the label or rating system used in your region. Check that the model suits your household's needs; the most efficient option is not helpful if it is unsuitable or does not last.",
+          "Purchase price is only part of ownership cost. Energy and water use over time may also matter, though actual use depends on settings, maintenance, and how often the appliance runs.",
+        ],
+      },
+      {
+        heading: "Use and maintain it well",
+        paragraphs: [
+          "Follow the manufacturer's instructions, use appropriate settings, and keep filters or vents maintained as directed. Avoid replacing a functioning appliance early unless there is a clear safety or practical reason.",
+        ],
+      },
+    ],
+    takeaway: "Compare reliable local energy information when replacement is needed, then use and maintain the appliance according to its guidance.",
+    quiz: [
+      {
+        question: "When is an efficient replacement appliance worth comparing?",
+        options: ["When the current appliance needs replacing", "Every few weeks", "Only after buying the first model you see"],
+        answer: 0,
+        explanation: "Comparing options at replacement time avoids unnecessary early disposal.",
+      },
+      {
+        question: "What can an energy label help you do?",
+        options: [
+          "Compare energy information between models",
+          "Guarantee exactly how much energy your home will use",
+          "Replace the need to check appliance suitability",
+        ],
+        answer: 0,
+        explanation: "Labels support comparisons, while actual use depends on many factors.",
+      },
+      {
+        question: "How should an appliance be maintained?",
+        options: [
+          "Follow the manufacturer's instructions",
+          "Remove safety components to improve airflow",
+          "Ignore maintenance guidance",
+        ],
+        answer: 0,
+        explanation: "Manufacturer guidance helps keep equipment working safely and properly.",
+      },
+    ],
+  },
+  {
+    id: "water-smart-routines",
+    title: "Build water-smart daily routines",
+    category: "Water",
+    level: "Beginner",
+    duration: "5 min",
+    icon: "🚿",
+    summary: "Find practical ways to reduce avoidable water use at home and outdoors.",
+    sections: [
+      {
+        heading: "Notice where water is used",
+        paragraphs: [
+          "Daily water use can include washing, cooking, cleaning, toilets, gardens, and leaks. The best place to start depends on local water conditions and the fixtures or outdoor space you have.",
+          "Shorter running-water tasks, full laundry or dish loads when appropriate, and repairing leaks can help avoid unnecessary use. Follow product instructions and hygiene needs.",
+        ],
+      },
+      {
+        heading: "Water gardens thoughtfully",
+        paragraphs: [
+          "If you care for a garden, use local guidance for watering times, restrictions, and suitable plants. Water needs change with weather, soil, and plant type; avoid runoff and never use water in a way that creates a safety or sanitation problem.",
+        ],
+      },
+    ],
+    takeaway: "Use local water guidance and focus on avoidable use, leaks, and garden practices that fit your climate.",
+    quiz: [
+      {
+        question: "What should guide water-saving priorities?",
+        options: [
+          "Local water conditions and household needs",
+          "A rule that is identical everywhere",
+          "Ignoring leaks until they stop on their own",
+        ],
+        answer: 0,
+        explanation: "Water supply and conservation needs differ by location.",
+      },
+      {
+        question: "What is a practical response to a persistent leak?",
+        options: [
+          "Arrange a safe repair or contact a qualified person",
+          "Wait indefinitely",
+          "Cover it without checking for damage",
+        ],
+        answer: 0,
+        explanation: "Repairing leaks can prevent continued water loss and damage.",
+      },
+      {
+        question: "What should shape garden watering?",
+        options: [
+          "Local guidance, weather, soil, and plant needs",
+          "A fixed schedule regardless of conditions",
+          "Watering during restrictions",
+        ],
+        answer: 0,
+        explanation: "Garden water needs and local rules vary.",
+      },
+    ],
+  },
+  {
+    id: "backyard-habitat",
+    title: "Create a welcoming backyard habitat",
+    category: "Nature",
+    level: "Beginner",
+    duration: "6 min",
+    icon: "🐝",
+    summary: "Support local wildlife with habitat choices suited to your area.",
+    sections: [
+      {
+        heading: "Start with local species",
+        paragraphs: [
+          "Plants native to a region can provide food or shelter for some local wildlife, but the best choices depend on the specific place and habitat. Ask a local conservation group, native-plant nursery, or extension service for suitable options.",
+          "A mix of locally appropriate plants that flower or fruit at different times can support a range of wildlife. Avoid introducing invasive species and check local guidance before planting.",
+        ],
+      },
+      {
+        heading: "Make the space safer",
+        paragraphs: [
+          "Reduce unnecessary pesticide use, keep pets from disturbing wildlife, and provide water only where it can be kept clean and safe. Even a small patch of connected habitat can be useful; do not handle wild animals or disturb nesting sites.",
+        ],
+      },
+    ],
+    takeaway: "Use local ecological advice, avoid invasive plants, and make habitat choices that are safe for wildlife and people.",
+    quiz: [
+      {
+        question: "How can you choose suitable plants for local wildlife?",
+        options: [
+          "Seek guidance from a trusted local ecological source",
+          "Choose any fast-growing plant",
+          "Assume all non-native plants are harmless",
+        ],
+        answer: 0,
+        explanation: "Local expertise helps identify appropriate species and avoid invasive plants.",
+      },
+      {
+        question: "What is a considerate way to protect backyard wildlife?",
+        options: [
+          "Limit unnecessary pesticide use and disturbance",
+          "Handle nests to inspect them",
+          "Introduce unfamiliar animals",
+        ],
+        answer: 0,
+        explanation: "Reducing disturbance and unnecessary chemicals can make habitat safer.",
+      },
+      {
+        question: "Should habitat advice be the same in every region?",
+        options: [
+          "No, species and ecological conditions are local",
+          "Yes, every region has identical ecosystems",
+          "Only gardens need local advice",
+        ],
+        answer: 0,
+        explanation: "Local conditions determine which species and practices are appropriate.",
+      },
+    ],
+  },
+  {
+    id: "plan-greener-trips",
+    title: "Plan a lower-impact trip",
+    category: "Transport",
+    level: "Beginner",
+    duration: "5 min",
+    icon: "🗺️",
+    summary: "Plan ahead to combine trips and compare safe, accessible travel options.",
+    sections: [
+      {
+        heading: "Think about the trip",
+        paragraphs: [
+          "Before leaving, consider the distance, timing, weather, mobility needs, and what transport is available. Walking, cycling, public transport, and shared trips may suit some journeys, but no one option is right for everyone.",
+          "Combining errands or choosing a nearby destination can sometimes avoid separate trips. Check schedules and access before relying on a route.",
+        ],
+      },
+      {
+        heading: "Keep safety and access first",
+        paragraphs: [
+          "Use routes and equipment that are safe for you, follow local road rules, and adapt plans to weather and personal needs. If a lower-impact option is not safe or accessible, choose a practical alternative without guilt.",
+        ],
+      },
+    ],
+    takeaway: "Plan realistic journeys that reduce unnecessary travel while prioritizing safety, access, and local conditions.",
+    quiz: [
+      {
+        question: "What can help avoid unnecessary travel?",
+        options: [
+          "Combining errands when practical",
+          "Taking several separate trips for nearby tasks",
+          "Ignoring travel distance",
+        ],
+        answer: 0,
+        explanation: "Combining tasks can reduce the number of separate journeys.",
+      },
+      {
+        question: "What should come first when choosing a travel mode?",
+        options: [
+          "Safety, accessibility, and the needs of the trip",
+          "Choosing the same mode for every person",
+          "Ignoring local conditions",
+        ],
+        answer: 0,
+        explanation: "Travel options need to be safe and accessible for the individual journey.",
+      },
+      {
+        question: "Is a lower-impact travel option always available?",
+        options: [
+          "No, availability and accessibility vary",
+          "Yes, for every trip and person",
+          "Only during holidays",
+        ],
+        answer: 0,
+        explanation: "Transport infrastructure and personal needs differ.",
+      },
+    ],
+  },
+  {
+    id: "food-less-waste",
+    title: "Make food go further",
+    category: "Food",
+    level: "Intermediate",
+    duration: "6 min",
+    icon: "🥕",
+    summary: "Use meal planning, storage, and flexible cooking to reduce avoidable food waste.",
+    sections: [
+      {
+        heading: "Plan around what you have",
+        paragraphs: [
+          "Before shopping, check what is already in your kitchen and plan a few meals around it. A flexible list can help you buy quantities you are likely to use while leaving room for changing schedules.",
+          "Store food according to its label and local food-safety guidance. Keep older suitable items visible so they are easier to use first.",
+        ],
+      },
+      {
+        heading: "Use safe, flexible options",
+        paragraphs: [
+          "Some ingredients can be used in soups, sauces, or other flexible meals, and suitable foods can sometimes be frozen for later. Do not rely on appearance or smell alone to judge food safety; follow date labels and public health advice for your location.",
+          "Food scraps that cannot be eaten may be accepted by a local compost or organics program. Check its rules before adding them.",
+        ],
+      },
+    ],
+    takeaway: "Plan realistically, store food safely, and follow local guidance for both food safety and scraps.",
+    quiz: [
+      {
+        question: "What is a useful first step before grocery shopping?",
+        options: [
+          "Check what food you already have",
+          "Buy duplicates without checking",
+          "Ignore household plans",
+        ],
+        answer: 0,
+        explanation: "Checking existing food can help you plan meals and avoid unnecessary purchases.",
+      },
+      {
+        question: "What should guide food storage and safety?",
+        options: [
+          "Product labels and local food-safety guidance",
+          "Guessing based only on smell",
+          "Leaving all food at room temperature",
+        ],
+        answer: 0,
+        explanation: "Reliable safety guidance is more dependable than guesswork.",
+      },
+      {
+        question: "Can all food scraps go into every compost program?",
+        options: [
+          "No, check the program's accepted-material rules",
+          "Yes, all programs accept everything",
+          "Only if the scraps are in plastic bags",
+        ],
+        answer: 0,
+        explanation: "Composting systems differ in what materials they can process.",
+      },
+    ],
+  },
 ];
