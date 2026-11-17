@@ -98,7 +98,7 @@ export default function LandingPage() {
             )}
             <Link
               to={startLink}
-              className="inline-flex items-center justify-center rounded-full bg-emerald-700 px-3 py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-900/15 hover:-translate-y-0.5 hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 sm:px-5 sm:text-sm dark:focus:ring-offset-slate-950"
+              className="inline-flex items-center justify-center rounded-full bg-emerald-700 px-3 py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-900/15 transition hover:-translate-y-0.5 hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 sm:px-5 sm:text-sm dark:focus:ring-offset-slate-950"
             >
               <span className="sm:hidden">{currentUser ? "Open app" : "Join"}</span>
               <span className="hidden sm:inline">
@@ -134,14 +134,14 @@ export default function LandingPage() {
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <Link
                 to={startLink}
-                className="inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-emerald-700 px-7 text-base font-bold text-white shadow-xl shadow-emerald-900/15 hover:-translate-y-0.5 hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
+                className="inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-emerald-700 px-7 text-base font-bold text-white shadow-xl shadow-emerald-900/15 transition hover:-translate-y-0.5 hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
               >
                 {startLabel}
                 <span aria-hidden="true">→</span>
               </Link>
               <a
                 href="#features"
-                className="inline-flex min-h-14 items-center justify-center rounded-full border border-slate-300 bg-white/70 px-7 text-base font-bold text-slate-700 hover:border-emerald-500 hover:text-emerald-800 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-emerald-600 dark:hover:text-emerald-300"
+                className="inline-flex min-h-14 items-center justify-center rounded-full border border-slate-300 bg-white/70 px-7 text-base font-bold text-slate-700 transition hover:border-emerald-500 hover:text-emerald-800 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-emerald-600 dark:hover:text-emerald-300"
               >
                 Explore the platform
               </a>
@@ -160,7 +160,7 @@ export default function LandingPage() {
               aria-hidden="true"
               className="absolute -bottom-8 -right-5 h-40 w-40 rounded-full bg-cyan-200/70 blur-3xl dark:bg-cyan-900/40"
             />
-            <div className="relative rounded-[2rem] border border-white/80 bg-white/90 p-5 shadow-2xl shadow-emerald-950/10 backdrop-blur sm:p-7 dark:border-slate-700 dark:bg-slate-900/90">
+            <div className="relative rounded-[2rem] border border-white/80 bg-white/90 p-5 shadow-2xl shadow-emerald-950/10 backdrop-blur transition duration-300 hover:-translate-y-1 hover:shadow-emerald-950/15 sm:p-7 dark:border-slate-700 dark:bg-slate-900/90">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
@@ -175,7 +175,7 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              <div className="mt-7 rounded-3xl bg-gradient-to-br from-emerald-700 to-teal-800 p-6 text-white">
+              <div className="mt-7 rounded-3xl bg-gradient-to-br from-emerald-700 via-emerald-700 to-teal-800 p-6 text-white shadow-lg shadow-emerald-900/15">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium text-emerald-100">
@@ -187,10 +187,12 @@ export default function LandingPage() {
                 </div>
                 <div className="mt-8 flex items-end gap-2" aria-hidden="true">
                   {[34, 48, 40, 67, 55, 78, 64, 92, 75, 100, 82, 94].map(
-                    height => (
+                    (height, index) => (
                       <span
                         key={height}
-                        className="flex-1 rounded-t-md bg-white/25"
+                        className={`flex-1 rounded-t-md transition-colors ${
+                          index === 9 ? "bg-lime-200" : "bg-white/25"
+                        }`}
                         style={{ height: `${height}px` }}
                       />
                     )
@@ -202,7 +204,7 @@ export default function LandingPage() {
               </div>
 
               <div className="mt-5 space-y-3">
-                <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800">
+                <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 transition hover:bg-emerald-50/70 dark:bg-slate-800 dark:hover:bg-slate-800/80">
                   <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-xl dark:bg-amber-900/50">
                     🚲
                   </span>
@@ -216,7 +218,7 @@ export default function LandingPage() {
                     ↗
                   </span>
                 </div>
-                <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800">
+                <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-4 transition hover:bg-emerald-50/70 dark:bg-slate-800 dark:hover:bg-slate-800/80">
                   <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-xl dark:bg-sky-900/50">
                     🤝
                   </span>
@@ -259,12 +261,20 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {features.map((feature) => (
+            {features.map((feature, index) => (
               <article
                 key={feature.title}
-                className="group rounded-3xl border border-slate-200 bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-950/5 dark:border-slate-700 dark:bg-slate-900"
+                className="group rounded-3xl border border-slate-200 bg-white p-7 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-950/5 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-emerald-900"
               >
-                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-3xl dark:bg-emerald-900/40">
+                <span
+                  className={`flex h-14 w-14 items-center justify-center rounded-2xl text-3xl ${
+                    index === 1
+                      ? "bg-amber-50 dark:bg-amber-900/30"
+                      : index === 2
+                        ? "bg-sky-50 dark:bg-sky-900/30"
+                        : "bg-emerald-50 dark:bg-emerald-900/40"
+                  }`}
+                >
                   {feature.icon}
                 </span>
                 <h3 className="mt-6 text-xl font-extrabold">{feature.title}</h3>
@@ -273,7 +283,7 @@ export default function LandingPage() {
                 </p>
                 <Link
                   to={currentUser ? feature.link : "/signup"}
-                  className="mt-5 inline-flex items-center gap-2 font-bold text-emerald-800 group-hover:gap-3 dark:text-emerald-300"
+                  className="mt-5 inline-flex items-center gap-2 font-bold text-emerald-800 transition-all group-hover:gap-3 dark:text-emerald-300"
                 >
                   {feature.linkText}
                   <span aria-hidden="true">→</span>
@@ -284,10 +294,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section
-        id="how-it-works"
-        className="scroll-mt-8 py-20 sm:py-24"
-      >
+      <section id="how-it-works" className="scroll-mt-8 py-20 sm:py-24">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
           <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
             <div>
@@ -303,7 +310,7 @@ export default function LandingPage() {
               </p>
               <Link
                 to={startLink}
-                className="mt-7 inline-flex items-center gap-2 font-bold text-emerald-800 hover:gap-3 dark:text-emerald-300"
+                className="mt-7 inline-flex items-center gap-2 font-bold text-emerald-800 transition-all hover:gap-3 dark:text-emerald-300"
               >
                 {startLabel}
                 <span aria-hidden="true">→</span>
@@ -313,7 +320,7 @@ export default function LandingPage() {
               {steps.map((step) => (
                 <article
                   key={step.number}
-                  className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900"
+                  className="rounded-3xl border border-slate-200 bg-white p-6 transition duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:hover:border-emerald-900"
                 >
                   <p className="text-sm font-black tracking-widest text-emerald-700 dark:text-emerald-400">
                     {step.number}
@@ -330,21 +337,27 @@ export default function LandingPage() {
       </section>
 
       <section className="px-5 pb-20 sm:px-8 sm:pb-24">
-        <div className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-emerald-800 px-6 py-12 text-center text-white sm:px-12 sm:py-16">
-          <span className="text-4xl" aria-hidden="true">🌿</span>
-          <h2 className="mx-auto mt-4 max-w-2xl text-3xl font-black tracking-tight sm:text-4xl">
-            Your next step can start right here.
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl leading-7 text-emerald-100">
-            Join Eco-Guardian and make space for more thoughtful choices, one
-            day at a time.
-          </p>
-          <Link
-            to={startLink}
-            className="mt-8 inline-flex min-h-14 items-center justify-center rounded-full bg-white px-7 py-3 font-extrabold text-emerald-900 hover:-translate-y-0.5 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-emerald-800"
-          >
-            {startLabel}
-          </Link>
+        <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-emerald-800 px-6 py-12 text-center text-white shadow-xl shadow-emerald-950/10 sm:px-12 sm:py-16">
+          <div
+            aria-hidden="true"
+            className="absolute -right-20 -top-28 h-72 w-72 rounded-full bg-emerald-400/20 blur-2xl"
+          />
+          <div className="relative">
+            <span className="text-4xl" aria-hidden="true">🌿</span>
+            <h2 className="mx-auto mt-4 max-w-2xl text-3xl font-black tracking-tight sm:text-4xl">
+              Your next step can start right here.
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl leading-7 text-emerald-100">
+              Join Eco-Guardian and make space for more thoughtful choices, one
+              day at a time.
+            </p>
+            <Link
+              to={startLink}
+              className="mt-8 inline-flex min-h-14 items-center justify-center rounded-full bg-white px-7 py-3 font-extrabold text-emerald-900 transition hover:-translate-y-0.5 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-emerald-800"
+            >
+              {startLabel}
+            </Link>
+          </div>
         </div>
       </section>
 
