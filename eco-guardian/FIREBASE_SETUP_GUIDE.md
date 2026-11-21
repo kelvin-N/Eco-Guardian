@@ -282,6 +282,39 @@ partial result explicitly; the text report remains available in My Reports.
 Image/video metadata is not stripped automatically, so submitters should check
 files for embedded location or device details before attaching them.
 
+### Community blog and photo uploads
+
+The signed-in `/blog` page lets members submit text posts with an optional HTTPS
+source link and up to three JPEG, PNG, or WebP photos (8 MB per photo).
+Submissions stay private while in draft and pending review. Administrators can
+publish or reject pending posts; signed-in members can read published posts.
+This feature supports photo uploads, not video uploads or live streaming.
+
+Posts are stored in `communityPosts/{postId}` with the author's UID and display
+name, text, topic, optional source URL, status, image count, and timestamps.
+Photos use `communityMedia/{authorUid}/{postId}/image-{1-3}`. The app creates a
+draft first, uploads photos, and then submits it for review. It does not store
+download URLs in Firestore; photos are fetched through authenticated Storage
+requests.
+
+The Firestore and Storage rules validate ownership, post status, image type,
+and file size. Deploy the reviewed rules and query index before using the page:
+
+```bash
+firebase deploy --only firestore,storage --project YOUR_FIREBASE_PROJECT_ID
+```
+
+Before production, add and run Firebase Emulator Suite tests that verify
+published-post reads, denial of unpublished reads, author-only draft creation
+and submission, administrator-only review, and Storage type/size/ownership
+checks. The current UI does not provide a report/takedown flow or admin
+deletion for already published posts; add those controls and a retention
+process before opening the feature to a wider community. Ask uploaders to get
+permission from identifiable people and check photos for embedded
+location/device metadata. Monitor Storage usage and set budget alerts. Recorded
+video uploads or live streaming require a separately designed extension and
+updated rules, limits, and cost controls.
+
 ### Step 9: Restart Development Server
 ```bash
 # Stop the dev server (Ctrl+C)

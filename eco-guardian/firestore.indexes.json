@@ -57,6 +57,14 @@
       ]
     },
     {
+      "collectionGroup": "communityPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "challengeMembers",
       "queryScope": "COLLECTION",
       "fields": [

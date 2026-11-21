@@ -87,6 +87,57 @@ service firebase.storage {
         && request.auth.uid == userId;
     }
 
+    match /communityMedia/{userId}/{postId}/{imageName} {
+      function postExists() {
+        return firestore.exists(
+          /databases/(default)/documents/communityPosts/$(postId)
+        );
+      }
+
+      function postData() {
+        return firestore.get(
+          /databases/(default)/documents/communityPosts/$(postId)
+        ).data;
+      }
+
+      function validImageName() {
+        return imageName.matches('image-[1-3]');
+      }
+
+      allow read: if signedIn()
+        && validImageName()
+        && postExists()
+        && (
+          isAdmin()
+          || (
+            request.auth.uid == userId
+            && postData().authorUid == userId
+          )
+          || postData().status == 'published'
+        );
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && validImageName()
+        && postExists()
+        && postData().authorUid == userId
+        && postData().status == 'draft'
+        && request.resource.size > 0
+        && request.resource.size <= 8 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+      allow update: if false;
+      allow delete: if signedIn()
+        && validImageName()
+        && postExists()
+        && (
+          isAdmin()
+          || (
+            request.auth.uid == userId
+            && postData().authorUid == userId
+            && postData().status == 'draft'
+          )
+        );
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

@@ -18,6 +18,7 @@ export default function Footer() {
     ],
     Community: [
       { label: "Community", to: "/community" },
+      { label: "News & Stories", to: "/blog" },
       { label: "Challenges", to: "/challenges" },
       { label: "Events", to: "/events" },
       { label: "Reports", to: "/reports" },

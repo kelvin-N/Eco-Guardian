@@ -4,6 +4,7 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  limit,
   orderBy,
   query,
   runTransaction,
@@ -22,6 +23,9 @@ import {
 import {
   deleteIncidentEvidence,
   deleteMarketplaceProductImages,
+  deleteCommunityPostImages,
+  uploadCommunityPostImage,
+  validateCommunityPostImages,
   uploadMarketplaceProductImages,
   uploadIncidentEvidence,
 } from "../firebase/storage";
@@ -52,6 +56,132 @@ const COLLECTION_REQUEST_STATUSES = [
   "completed",
   "cancelled",
 ];
+
+const COMMUNITY_POST_TOPICS = [
+  "Climate",
+  "Wildlife",
+  "Cleanups",
+  "Recycling",
+  "Community",
+  "Other",
+];
+
+export async function createCommunityPost(uid, authorName, post, imageFiles = []) {
+  requireFirestore();
+  const content = post.content.trim();
+  const topic = post.topic;
+  const sourceUrl = post.sourceUrl.trim();
+  const normalizedAuthorName = authorName.trim().slice(0, 80);
+
+  if (content.length < 20 || content.length > 2000) {
+    throw new Error("Post text must be between 20 and 2,000 characters.");
+  }
+  if (!COMMUNITY_POST_TOPICS.includes(topic)) {
+    throw new Error("Choose a supported post topic.");
+  }
+  if (!normalizedAuthorName) {
+    throw new Error("Add a display name to your profile before posting.");
+  }
+  if (sourceUrl) {
+    try {
+      const parsedSourceUrl = new URL(sourceUrl);
+      if (parsedSourceUrl.protocol !== "https:") throw new Error();
+    } catch {
+      throw new Error("News source links must be valid HTTPS URLs.");
+    }
+  }
+  validateCommunityPostImages(imageFiles);
+
+  const postRef = doc(collection(db, "communityPosts"));
+  await setDoc(postRef, {
+    authorUid: uid,
+    authorName: normalizedAuthorName,
+    content,
+    topic,
+    sourceUrl,
+    status: "draft",
+    imageCount: 0,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  let uploadedImageCount = 0;
+  try {
+    for (const [index, file] of imageFiles.entries()) {
+      await uploadCommunityPostImage(uid, postRef.id, index + 1, file);
+      uploadedImageCount += 1;
+    }
+
+    await updateDoc(postRef, {
+      imageCount: uploadedImageCount,
+      status: "pending",
+      updatedAt: serverTimestamp(),
+    });
+    return postRef.id;
+  } catch (uploadError) {
+    let cleanupMessage = "";
+    if (uploadedImageCount > 0) {
+      try {
+        await deleteCommunityPostImages(uid, postRef.id, uploadedImageCount);
+      } catch (cleanupError) {
+        console.error("Failed to clean up community post photos:", cleanupError);
+        cleanupMessage = " Uploaded photos could not all be removed; the draft was kept for cleanup.";
+      }
+    }
+    if (!cleanupMessage) {
+      try {
+        await deleteDoc(postRef);
+      } catch (cleanupError) {
+        console.error("Failed to remove incomplete community post:", cleanupError);
+        cleanupMessage = " The incomplete post could not be removed.";
+      }
+    }
+    throw new Error(
+      `${uploadError.message || "The post could not be submitted."}${cleanupMessage}`
+    );
+  }
+}
+
+export async function getPublishedCommunityPosts() {
+  requireFirestore();
+  const postsQuery = query(
+    collection(db, "communityPosts"),
+    where("status", "==", "published"),
+    orderBy("createdAt", "desc"),
+    limit(30)
+  );
+  const snapshot = await getDocs(postsQuery);
+  return snapshot.docs.map((postDoc) => ({
+    id: postDoc.id,
+    ...postDoc.data(),
+  }));
+}
+
+export async function getPendingCommunityPosts() {
+  requireFirestore();
+  const postsQuery = query(
+    collection(db, "communityPosts"),
+    where("status", "==", "pending"),
+    orderBy("createdAt", "desc"),
+    limit(30)
+  );
+  const snapshot = await getDocs(postsQuery);
+  return snapshot.docs.map((postDoc) => ({
+    id: postDoc.id,
+    ...postDoc.data(),
+  }));
+}
+
+export async function updateCommunityPostStatus(postId, status) {
+  requireFirestore();
+  if (!["published", "rejected"].includes(status)) {
+    throw new Error("Community posts can only be published or rejected.");
+  }
+  await updateDoc(doc(db, "communityPosts", postId), {
+    status,
+    reviewedAt: serverTimestamp(),
+  });
+}
 
 export async function createWasteCollectionRequest(uid, request) {
   requireFirestore();

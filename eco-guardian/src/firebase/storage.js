@@ -3,6 +3,7 @@ import {
   deleteObject,
   getBytes,
   getDownloadURL,
+  getMetadata,
   ref,
   uploadBytes,
   uploadBytesResumable,
@@ -16,6 +17,9 @@ const PRODUCT_IMAGE_MAX_FILE_SIZE = 10 * 1024 * 1024;
 const PRODUCT_IMAGE_MAX_TOTAL_SIZE = 25 * 1024 * 1024;
 const PRODUCT_IMAGE_MAX_DIMENSION = 1600;
 const PRODUCT_IMAGE_MAX_OPTIMIZED_SIZE = 2 * 1024 * 1024;
+const COMMUNITY_POST_IMAGE_MAX_COUNT = 3;
+const COMMUNITY_POST_IMAGE_MAX_SIZE = 8 * 1024 * 1024;
+const COMMUNITY_POST_IMAGE_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export function validateMarketplaceProductImages(files) {
   if (files.length > PRODUCT_IMAGE_MAX_COUNT) {
@@ -124,6 +128,63 @@ export async function deleteMarketplaceProductImages(images) {
   const failedDeletes = results.filter((result) => result.status === "rejected");
   if (failedDeletes.length > 0) {
     throw new Error(`${failedDeletes.length} product image(s) could not be removed.`);
+  }
+}
+
+export function validateCommunityPostImages(files) {
+  if (files.length > COMMUNITY_POST_IMAGE_MAX_COUNT) {
+    throw new Error(`Choose no more than ${COMMUNITY_POST_IMAGE_MAX_COUNT} photos.`);
+  }
+  if (files.some((file) => !COMMUNITY_POST_IMAGE_CONTENT_TYPES.includes(file.type))) {
+    throw new Error("Community photos must be JPEG, PNG, or WebP files.");
+  }
+  if (files.some((file) => file.size === 0 || file.size > COMMUNITY_POST_IMAGE_MAX_SIZE)) {
+    throw new Error("Each community photo must be larger than 0 bytes and no more than 8 MB.");
+  }
+}
+
+export async function uploadCommunityPostImage(uid, postId, imageNumber, file) {
+  if (!storage) {
+    throw new Error("Firebase Storage is not configured. Check your Firebase project setup.");
+  }
+  if (!Number.isInteger(imageNumber) || imageNumber < 1 || imageNumber > COMMUNITY_POST_IMAGE_MAX_COUNT) {
+    throw new Error("Invalid community photo number.");
+  }
+  validateCommunityPostImages([file]);
+
+  const storagePath = `communityMedia/${uid}/${postId}/image-${imageNumber}`;
+  await uploadBytes(ref(storage, storagePath), file, {
+    contentType: file.type,
+    cacheControl: "private, no-cache, max-age=0, must-revalidate",
+  });
+  return storagePath;
+}
+
+export async function getCommunityPostImageBlob(uid, postId, imageNumber) {
+  if (!storage) {
+    throw new Error("Firebase Storage is not configured. Check your Firebase project setup.");
+  }
+  const storagePath = `communityMedia/${uid}/${postId}/image-${imageNumber}`;
+  const imageRef = ref(storage, storagePath);
+  const [bytes, metadata] = await Promise.all([
+    getBytes(imageRef, COMMUNITY_POST_IMAGE_MAX_SIZE),
+    getMetadata(imageRef),
+  ]);
+  return new Blob([bytes], { type: metadata.contentType });
+}
+
+export async function deleteCommunityPostImages(uid, postId, imageCount) {
+  if (!storage) {
+    throw new Error("Firebase Storage is not configured. Check your Firebase project setup.");
+  }
+  const results = await Promise.allSettled(
+    Array.from({ length: imageCount }, (_, index) =>
+      deleteObject(ref(storage, `communityMedia/${uid}/${postId}/image-${index + 1}`))
+    )
+  );
+  const failedDeletes = results.filter((result) => result.status === "rejected");
+  if (failedDeletes.length > 0) {
+    throw new Error(`${failedDeletes.length} community photo(s) could not be removed.`);
   }
 }
 

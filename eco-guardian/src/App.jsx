@@ -23,6 +23,7 @@ import ReportsList from "./features/reporting/ReportsList";
 import Organizations from "./features/organizations/Organizations";
 import CommunityChallenges from "./features/challenges/CommunityChallenges";
 import LandingPage from "./features/landing/LandingPage";
+import CommunityBlog from "./features/blog/CommunityBlog";
 import { useAuth } from "./context/AuthContext";
 
 // -------------------------------
@@ -181,6 +182,15 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <CommunityLeaderboard />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/blog"
+              element={
+                <ProtectedRoute>
+                  <CommunityBlog />
                 </ProtectedRoute>
               }
             />

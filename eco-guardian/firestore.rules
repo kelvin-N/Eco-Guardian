@@ -63,6 +63,37 @@ service cloud.firestore {
         );
     }
 
+    function validCommunityPost(data) {
+      return data.keys().hasOnly([
+          'authorUid', 'authorName', 'content', 'topic', 'sourceUrl',
+          'status', 'imageCount', 'createdAt', 'updatedAt', 'reviewedAt'
+        ])
+        && data.keys().hasAll([
+          'authorUid', 'authorName', 'content', 'topic', 'sourceUrl',
+          'status', 'imageCount', 'createdAt', 'updatedAt'
+        ])
+        && data.authorUid is string
+        && data.authorName is string
+        && data.authorName.size() > 0
+        && data.authorName.size() <= 80
+        && data.content is string
+        && data.content.size() >= 20
+        && data.content.size() <= 2000
+        && data.topic in [
+          'Climate', 'Wildlife', 'Cleanups', 'Recycling', 'Community', 'Other'
+        ]
+        && data.sourceUrl is string
+        && data.sourceUrl.size() <= 500
+        && (data.sourceUrl == '' || data.sourceUrl.matches('https://.*'))
+        && data.status in ['draft', 'pending', 'published', 'rejected']
+        && data.imageCount is int
+        && data.imageCount >= 0
+        && data.imageCount <= 3
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && (!('reviewedAt' in data) || data.reviewedAt is timestamp);
+    }
+
     function validProduct(data, productId) {
       return data.keys().hasOnly([
           'title', 'description', 'category', 'price', 'stock', 'sellerId',
@@ -371,6 +402,45 @@ service cloud.firestore {
         && resource.data.uid == request.auth.uid
         && memberId == resource.data.challengeId + '_'
           + resource.data.periodStart + '_' + request.auth.uid;
+    }
+
+    match /communityPosts/{postId} {
+      allow get, list: if signedIn()
+        && (
+          isAdmin()
+          || resource.data.authorUid == request.auth.uid
+          || resource.data.status == 'published'
+        );
+      allow create: if signedIn()
+        && validCommunityPost(request.resource.data)
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.status == 'draft'
+        && request.resource.data.imageCount == 0
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if (
+          signedIn()
+          && resource.data.authorUid == request.auth.uid
+          && resource.data.status == 'draft'
+          && validCommunityPost(request.resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'imageCount', 'updatedAt'])
+          && request.resource.data.status == 'pending'
+          && request.resource.data.updatedAt == request.time
+        )
+        || (
+          isAdmin()
+          && resource.data.status == 'pending'
+          && validCommunityPost(request.resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'reviewedAt'])
+          && request.resource.data.status in ['published', 'rejected']
+          && request.resource.data.reviewedAt == request.time
+        );
+      allow delete: if signedIn()
+        && resource.data.authorUid == request.auth.uid
+        && resource.data.status == 'draft'
+        && resource.data.imageCount == 0;
     }
 
     match /products/{productId} {
